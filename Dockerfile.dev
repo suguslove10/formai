@@ -1,0 +1,23 @@
+FROM node:20-slim
+
+WORKDIR /app
+
+# Install OpenSSL for Prisma support
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+# Copy dependency manifests
+COPY package.json package-lock.json* ./
+COPY prisma ./prisma/
+
+# Install dependencies (source code comes via bind mount for rapid hot reloading)
+RUN npm install
+
+# Generate prisma client
+RUN npx prisma generate || true
+
+EXPOSE 3000
+
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+CMD ["npm", "run", "dev"]
