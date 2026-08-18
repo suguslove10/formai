@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import OpenAI from "openai";
 import { FormFieldType } from "@/lib/validations/form";
+import { dispatchFormWebhooks } from "@/lib/webhook-dispatcher";
 
 interface RouteParams {
   params: {
@@ -145,6 +146,19 @@ Always call the tool 'update_form_progress' with your reply, any newly extracted
               },
             });
             responseId = savedResponse.id;
+
+            // Trigger Enterprise outbound webhooks
+            dispatchFormWebhooks({
+              event: result.leadScore === "high" ? "lead.high" : result.sentiment === "negative" ? "sentiment.negative" : "response.created",
+              formId: id,
+              formTitle: form.title,
+              responseId: savedResponse.id,
+              data: updatedData,
+              sentiment: result.sentiment || "positive",
+              leadScore: result.leadScore || "high",
+              aiSummary: result.aiSummary,
+              submittedAt: new Date().toISOString(),
+            }).catch((e) => console.error("Chatbot webhook error:", e));
           } catch (dbErr) {
             console.error("Error saving chatbot response:", dbErr);
           }

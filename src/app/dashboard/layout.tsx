@@ -67,6 +67,12 @@ export default async function DashboardLayout({
                 <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
                 AI Chatbots
               </Link>
+              <Link
+                href="/dashboard/settings"
+                className="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center gap-1.5"
+              >
+                Workspace & Security
+              </Link>
             </nav>
           </div>
 

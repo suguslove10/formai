@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
-import { UpdateFormSchema } from "@/lib/validations/form";
+import { FormFieldType, UpdateFormSchema } from "@/lib/validations/form";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 interface RouteParams {
   params: {
@@ -85,11 +86,26 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     if (parsed.data.botGreeting !== undefined) updateData.botGreeting = parsed.data.botGreeting;
     if (parsed.data.botPersona !== undefined) updateData.botPersona = parsed.data.botPersona;
     if (parsed.data.knowledgeBase !== undefined) updateData.knowledgeBase = parsed.data.knowledgeBase;
+    
+    // Enterprise fields
+    if (parsed.data.customDomain !== undefined) updateData.customDomain = parsed.data.customDomain;
+    if (parsed.data.removeBranding !== undefined) updateData.removeBranding = parsed.data.removeBranding;
+    if (parsed.data.isMultiStep !== undefined) updateData.isMultiStep = parsed.data.isMultiStep;
+    if (parsed.data.themeColor !== undefined) updateData.themeColor = parsed.data.themeColor;
+    if (parsed.data.webhookUrl !== undefined) updateData.webhookUrl = parsed.data.webhookUrl;
 
     const updated = await prisma.form.update({
       where: { id },
       data: updateData,
     });
+
+    // Record audit event
+    logAuditEvent({
+      userId: effectiveUserId,
+      action: parsed.data.status === "published" ? "FORM_PUBLISHED" : "FORM_UPDATED",
+      resource: id,
+      details: { title: updated.title, status: updated.status },
+    }).catch(() => {});
 
     return NextResponse.json({ success: true, form: updated });
   } catch (error: any) {

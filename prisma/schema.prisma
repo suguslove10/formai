@@ -10,46 +10,93 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  clerkId   String   @unique
-  email     String   @unique
-  createdAt DateTime @default(now())
-  forms     Form[]
-
-  @@map("users")
-}
-
 enum FormStatus {
   draft
   published
 }
 
-model Form {
-  id            String     @id @default(cuid())
-  userId        String
-  title         String
-  description   String?
-  fieldsJson    Json       // Stores array of FormField according to FormSchema
-  status        FormStatus @default(draft)
-  botName       String     @default("FormAI Assistant")
-  botGreeting   String?
-  botPersona    String     @default("friendly") // friendly, professional, casual, formal
-  knowledgeBase String?    // FAQs, business rules, return policies, context
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+enum MemberRole {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
 
-  user          User?      @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
-  responses     Response[]
+model User {
+  id               String            @id @default(cuid())
+  clerkId          String            @unique
+  email            String            @unique
+  createdAt        DateTime          @default(now())
+  forms            Form[]
+  workspaceMembers WorkspaceMember[]
+  auditLogs        AuditLog[]
+
+  @@map("users")
+}
+
+model Workspace {
+  id          String            @id @default(cuid())
+  name        String            @default("My Organization")
+  slug        String            @unique @default(cuid())
+  createdAt   DateTime          @default(now())
+  members     WorkspaceMember[]
+  forms       Form[]
+  auditLogs   AuditLog[]
+
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  id          String     @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        MemberRole @default(EDITOR)
+  createdAt   DateTime   @default(now())
+
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User       @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@map("workspace_members")
+}
+
+model Form {
+  id             String       @id @default(cuid())
+  userId         String
+  workspaceId    String?
+  title          String
+  description    String?
+  fieldsJson     Json         // Stores array of FormField according to FormSchema
+  status         FormStatus   @default(draft)
+  botName        String       @default("FormAI Assistant")
+  botGreeting    String?
+  botPersona     String       @default("friendly")
+  knowledgeBase  String?
+  
+  // Enterprise fields
+  customDomain   String?      @unique
+  removeBranding Boolean      @default(false)
+  isMultiStep    Boolean      @default(false)
+  themeColor     String       @default("#4f46e5")
+  webhookUrl     String?      // Quick webhook endpoint
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  user           User?        @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  workspace      Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  responses      Response[]
+  webhooks       Webhook[]
 
   @@index([userId])
+  @@index([workspaceId])
   @@map("forms")
 }
 
 model Response {
   id          String   @id @default(cuid())
   formId      String
-  dataJson    Json     // Key-value map of submitted form field answers
+  dataJson    Json     // Key-value map of submitted form field answers including UTMs
   sentiment   String?  // positive, neutral, negative
   leadScore   String?  // high, medium, low
   aiSummary   String?  // 1-sentence AI executive summary
@@ -59,4 +106,37 @@ model Response {
 
   @@index([formId])
   @@map("responses")
+}
+
+model Webhook {
+  id          String   @id @default(cuid())
+  formId      String
+  url         String
+  secret      String   @default(cuid())
+  events      String[] @default(["response.created"]) // response.created, lead.high, sentiment.negative
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  form        Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([formId])
+  @@map("webhooks")
+}
+
+model AuditLog {
+  id          String     @id @default(cuid())
+  workspaceId String?
+  userId      String
+  action      String     // FORM_CREATED, FORM_UPDATED, FORM_PUBLISHED, RESPONSES_EXPORTED, WEBHOOK_TRIGGERED
+  resource    String     // Form ID, Webhook ID, etc.
+  details     Json?      // Additional context payload
+  ipAddress   String?
+  createdAt   DateTime   @default(now())
+
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  user        User?      @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([userId])
+  @@map("audit_logs")
 }

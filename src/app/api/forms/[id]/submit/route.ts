@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { FormFieldType } from "@/lib/validations/form";
+import { dispatchFormWebhooks } from "@/lib/webhook-dispatcher";
+import OpenAI from "openai";
 
 interface RouteParams {
   params: {
@@ -117,6 +119,14 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // Preserve UTM and tracking parameters
+    const utmKeys = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "ref", "referrer"];
+    utmKeys.forEach((k) => {
+      if (body[k]) {
+        sanitizedData[k] = body[k];
+      }
+    });
+
     if (Object.keys(errors).length > 0) {
       return NextResponse.json(
         {
@@ -127,13 +137,63 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // Calculate AI Sentiment & Summary if OpenAI is available
+    let sentiment = "positive";
+    let leadScore = "high";
+    let aiSummary = `Submitted ${fields.length} responses for ${form.title}`;
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (apiKey && apiKey.startsWith("sk-")) {
+      try {
+        const openai = new OpenAI({ apiKey });
+        const analysis = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: "You are an executive CRM analyst. Analyze this form response data and output JSON with: sentiment (positive, neutral, or negative), leadScore (high, medium, or low), and aiSummary (1 concise sentence summary).",
+            },
+            {
+              role: "user",
+              content: `Form Title: ${form.title}\nResponses:\n${JSON.stringify(sanitizedData, null, 2)}`,
+            },
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.3,
+        });
+
+        const parsedAnalysis = JSON.parse(analysis.choices[0]?.message?.content || "{}");
+        if (parsedAnalysis.sentiment) sentiment = parsedAnalysis.sentiment;
+        if (parsedAnalysis.leadScore) leadScore = parsedAnalysis.leadScore;
+        if (parsedAnalysis.aiSummary) aiSummary = parsedAnalysis.aiSummary;
+      } catch (aiErr) {
+        console.warn("AI analysis skipped on submission:", aiErr);
+      }
+    }
+
     // Save submission response to PostgreSQL
     const responseRecord = await prisma.response.create({
       data: {
         formId: id,
         dataJson: sanitizedData,
+        sentiment,
+        leadScore,
+        aiSummary,
       },
     });
+
+    // Asynchronously dispatch outbound Webhooks & Slack alerts
+    dispatchFormWebhooks({
+      event: leadScore === "high" ? "lead.high" : sentiment === "negative" ? "sentiment.negative" : "response.created",
+      formId: id,
+      formTitle: form.title,
+      responseId: responseRecord.id,
+      data: sanitizedData,
+      sentiment,
+      leadScore,
+      aiSummary,
+      submittedAt: new Date().toISOString(),
+    }).catch((e) => console.error("Webhook dispatch error:", e));
 
     return NextResponse.json({
       success: true,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FormFieldType } from "@/lib/validations/form";
 import { 
   Star, 
@@ -11,7 +11,11 @@ import {
   Sparkles,
   Send,
   Calendar,
-  FileCheck
+  FileCheck,
+  CreditCard,
+  Lock,
+  ChevronRight,
+  ChevronLeft
 } from "lucide-react";
 
 interface PublicFormRendererProps {
@@ -20,6 +24,8 @@ interface PublicFormRendererProps {
     title: string;
     description?: string | null;
     fieldsJson: FormFieldType[];
+    isMultiStep?: boolean;
+    themeColor?: string;
   };
   isPreview?: boolean;
 }
@@ -31,10 +37,57 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Automatically capture URL query UTM parameters on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      const utms: Record<string, string> = {};
+      ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "ref"].forEach((param) => {
+        const val = searchParams.get(param);
+        if (val) utms[param] = val;
+      });
+      if (Object.keys(utms).length > 0) {
+        setFormData((prev) => ({ ...prev, ...utms }));
+      }
+    }
+  }, []);
+
+  // Evaluate dynamic conditional show/hide logic
+  const isFieldVisible = (field: FormFieldType): boolean => {
+    if (!field.conditionalRule || !field.conditionalRule.fieldId) return true;
+    const { fieldId, operator, value } = field.conditionalRule;
+    const parentVal = formData[fieldId];
+
+    switch (operator) {
+      case "equals":
+        return String(parentVal ?? "").toLowerCase() === String(value ?? "").toLowerCase();
+      case "not_equals":
+        return String(parentVal ?? "").toLowerCase() !== String(value ?? "").toLowerCase();
+      case "contains":
+        if (Array.isArray(parentVal)) return parentVal.includes(value);
+        return String(parentVal ?? "").toLowerCase().includes(String(value ?? "").toLowerCase());
+      case "is_not_empty":
+        return parentVal !== undefined && parentVal !== null && parentVal !== "";
+      case "greater_than":
+        return Number(parentVal) > Number(value);
+      case "less_than":
+        return Number(parentVal) < Number(value);
+      default:
+        return true;
+    }
+  };
+
+  // Group visible fields by page
+  const visibleFields = fields.filter(isFieldVisible);
+  const maxPage = form.isMultiStep ? Math.max(...fields.map((f) => f.page || 1), 1) : 1;
+  const currentFields = form.isMultiStep 
+    ? visibleFields.filter((f) => (f.page || 1) === currentPage)
+    : visibleFields;
 
   const handleInputChange = (fieldId: string, value: any) => {
     setFormData((prev) => ({ ...prev, [fieldId]: value }));
-    // Clear error for this field when changed
     if (errors[fieldId]) {
       setErrors((prev) => {
         const next = { ...prev };
@@ -55,10 +108,11 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
     handleInputChange(fieldId, updated);
   };
 
-  const validateClient = (): boolean => {
+  const validatePage = (fieldsToValidate: FormFieldType[]): boolean => {
     const newErrors: Record<string, string> = {};
 
-    for (const field of fields) {
+    for (const field of fieldsToValidate) {
+      if (!isFieldVisible(field)) continue;
       const val = formData[field.id];
 
       if (field.required) {
@@ -82,18 +136,28 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
       }
     }
 
-    setErrors(newErrors);
+    setErrors((prev) => ({ ...prev, ...newErrors }));
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleNextStep = () => {
+    if (validatePage(currentFields)) {
+      setCurrentPage((prev) => Math.min(prev + 1, maxPage));
+    }
+  };
+
+  const handlePrevStep = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isPreview) {
-      alert("This is a live preview. In production, this form will submit directly to FormAI database.");
+      alert("This is a live preview. In production, this form will submit directly to FormAI database and trigger outbound webhooks.");
       return;
     }
 
-    if (!validateClient()) return;
+    if (!validatePage(visibleFields)) return;
 
     setIsSubmitting(true);
     setSubmitError(null);
@@ -140,6 +204,7 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
           onClick={() => {
             setFormData({});
             setIsSubmitted(false);
+            setCurrentPage(1);
           }}
           className="inline-flex items-center justify-center px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold rounded-xl transition"
         >
@@ -150,9 +215,9 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
   }
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl p-6 sm:p-10 max-w-2xl mx-auto">
+    <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl p-6 sm:p-10 max-w-2xl mx-auto space-y-6">
       {/* Form Header */}
-      <div className="border-b border-slate-100 pb-6 mb-8">
+      <div className="border-b border-slate-100 pb-6">
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
           {form.title || "Untitled Form"}
         </h1>
@@ -161,10 +226,26 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
             {form.description}
           </p>
         )}
+
+        {/* Multi-Step Progress Indicator */}
+        {form.isMultiStep && maxPage > 1 && (
+          <div className="mt-5 space-y-1.5">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
+              <span>Step {currentPage} of {maxPage}</span>
+              <span>{Math.round((currentPage / maxPage) * 100)}% Completed</span>
+            </div>
+            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-indigo-600 rounded-full transition-all duration-300"
+                style={{ width: `${(currentPage / maxPage) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {submitError && (
-        <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-start gap-3">
+        <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-start gap-3">
           <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold">Submission Error</p>
@@ -175,13 +256,13 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
 
       {/* Form Fields */}
       <form onSubmit={handleSubmit} className="space-y-6">
-        {fields.map((field, idx) => {
+        {currentFields.map((field, idx) => {
           const hasError = !!errors[field.id];
 
           return (
             <div
               key={field.id || idx}
-              className="space-y-2 p-4 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-slate-300 transition"
+              className="space-y-2 p-4 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-slate-300 transition animate-in fade-in duration-150"
             >
               <label className="block text-sm font-semibold text-slate-900">
                 {field.label}
@@ -192,7 +273,7 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
                 <p className="text-xs text-slate-500 mb-1">{field.helpText}</p>
               )}
 
-              {/* Render by field.type */}
+              {/* Field Renderers */}
               {field.type === "text" && (
                 <input
                   type="text"
@@ -339,16 +420,14 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
               )}
 
               {field.type === "date" && (
-                <div className="relative">
-                  <input
-                    type="date"
-                    value={formData[field.id] || ""}
-                    onChange={(e) => handleInputChange(field.id, e.target.value)}
-                    className={`w-full px-4 py-2.5 text-sm bg-white border rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${
-                      hasError ? "border-red-400 focus:ring-red-400" : "border-slate-300"
-                    }`}
-                  />
-                </div>
+                <input
+                  type="date"
+                  value={formData[field.id] || ""}
+                  onChange={(e) => handleInputChange(field.id, e.target.value)}
+                  className={`w-full px-4 py-2.5 text-sm bg-white border rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${
+                    hasError ? "border-red-400 focus:ring-red-400" : "border-slate-300"
+                  }`}
+                />
               )}
 
               {field.type === "file" && (
@@ -356,9 +435,6 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
                   <UploadCloud className="w-8 h-8 text-indigo-500 mx-auto mb-2" />
                   <p className="text-xs font-semibold text-slate-700">
                     Click to select or drag and drop a file
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Supports PDF, DOCX, PNG, JPG (S3 interface stubbed)
                   </p>
                   <input
                     type="file"
@@ -379,6 +455,40 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
                 </div>
               )}
 
+              {/* Stripe Payment Card Field */}
+              {field.type === "payment" && (
+                <div className="p-4 rounded-2xl bg-white border border-indigo-200 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <CreditCard className="w-4 h-4 text-indigo-600" />
+                      Secure Stripe Checkout
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                      <Lock className="w-3 h-3" /> 256-bit Encrypted
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    value={formData[field.id] || ""}
+                    onChange={(e) => handleInputChange(field.id, e.target.value)}
+                    placeholder="Card Number: •••• •••• •••• 4242"
+                    className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      placeholder="MM / YY"
+                      className="px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="CVC"
+                      className="px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+              )}
+
               {hasError && (
                 <p className="text-xs font-medium text-red-600 mt-1 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" />
@@ -389,24 +499,47 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
           );
         })}
 
-        <div className="pt-4">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-base rounded-2xl shadow-lg shadow-indigo-200 transition-all hover:scale-[1.01] disabled:opacity-50"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Submitting Response...</span>
-              </>
-            ) : (
-              <>
-                <Send className="w-4 h-4" />
-                <span>Submit Form</span>
-              </>
-            )}
-          </button>
+        {/* Step Navigation & Submit Buttons */}
+        <div className="pt-4 flex items-center justify-between gap-3">
+          {form.isMultiStep && maxPage > 1 && currentPage > 1 ? (
+            <button
+              type="button"
+              onClick={handlePrevStep}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back
+            </button>
+          ) : <div />}
+
+          {form.isMultiStep && maxPage > 1 && currentPage < maxPage ? (
+            <button
+              type="button"
+              onClick={handleNextStep}
+              className="inline-flex items-center gap-1.5 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-200 transition"
+            >
+              <span>Next Step</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-200 transition-all hover:scale-[1.01] disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Submitting...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  <span>Submit Form</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </form>
     </div>

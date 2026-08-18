@@ -26,12 +26,17 @@ import {
   BookOpen,
   MessageSquare,
   Smile,
-  ShieldCheck
+  ShieldCheck,
+  Zap,
+  Split,
+  Layers,
+  CreditCard
 } from "lucide-react";
-import { FieldTypeEnum, FormFieldType } from "@/lib/validations/form";
+import { FieldTypeEnum, FormFieldType, ConditionalRuleType } from "@/lib/validations/form";
 import { generateId } from "@/lib/utils";
 import { PublicFormRenderer } from "@/components/form/PublicFormRenderer";
 import { ConversationalChatbot } from "@/components/chat/ConversationalChatbot";
+import { IntegrationsTab } from "@/components/editor/IntegrationsTab";
 
 const AVAILABLE_FIELD_TYPES: { type: FieldTypeEnum; label: string; description: string }[] = [
   { type: "text", label: "Single-line Text", description: "Short answers, names, titles" },
@@ -44,6 +49,7 @@ const AVAILABLE_FIELD_TYPES: { type: FieldTypeEnum; label: string; description: 
   { type: "rating", label: "1-5 Star Rating", description: "Satisfaction, review scores" },
   { type: "date", label: "Date Picker", description: "Calendar date selection" },
   { type: "file", label: "File Upload", description: "Document or image upload" },
+  { type: "payment", label: "Stripe Payment / Deposit", description: "Collect credit card payments" },
 ];
 
 interface FormEditorProps {
@@ -57,6 +63,11 @@ interface FormEditorProps {
     botGreeting?: string | null;
     botPersona?: string;
     knowledgeBase?: string | null;
+    webhookUrl?: string | null;
+    customDomain?: string | null;
+    removeBranding?: boolean;
+    isMultiStep?: boolean;
+    themeColor?: string;
   };
 }
 
@@ -72,7 +83,13 @@ export function FormEditor({ initialForm }: FormEditorProps) {
   const [botPersona, setBotPersona] = useState(initialForm.botPersona || "friendly");
   const [knowledgeBase, setKnowledgeBase] = useState(initialForm.knowledgeBase || "");
 
-  const [activeTab, setActiveTab] = useState<"editor" | "knowledge" | "preview" | "chatbot">("editor");
+  // Enterprise Settings
+  const [webhookUrl, setWebhookUrl] = useState(initialForm.webhookUrl || "");
+  const [customDomain, setCustomDomain] = useState(initialForm.customDomain || "");
+  const [removeBranding, setRemoveBranding] = useState(initialForm.removeBranding || false);
+  const [isMultiStep, setIsMultiStep] = useState(initialForm.isMultiStep || false);
+
+  const [activeTab, setActiveTab] = useState<"editor" | "knowledge" | "integrations" | "preview" | "chatbot">("editor");
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved" | "error">("saved");
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedChatbotLink, setCopiedChatbotLink] = useState(false);
@@ -94,7 +111,11 @@ export function FormEditor({ initialForm }: FormEditorProps) {
       updatedBotName: string,
       updatedBotGreeting: string,
       updatedBotPersona: string,
-      updatedKnowledgeBase: string
+      updatedKnowledgeBase: string,
+      updatedWebhookUrl: string,
+      updatedCustomDomain: string,
+      updatedRemoveBranding: boolean,
+      updatedIsMultiStep: boolean
     ) => {
       setSaveStatus("saving");
       try {
@@ -110,6 +131,10 @@ export function FormEditor({ initialForm }: FormEditorProps) {
             botGreeting: updatedBotGreeting,
             botPersona: updatedBotPersona,
             knowledgeBase: updatedKnowledgeBase,
+            webhookUrl: updatedWebhookUrl,
+            customDomain: updatedCustomDomain || undefined,
+            removeBranding: updatedRemoveBranding,
+            isMultiStep: updatedIsMultiStep,
           }),
         });
 
@@ -145,14 +170,32 @@ export function FormEditor({ initialForm }: FormEditorProps) {
         botName, 
         botGreeting, 
         botPersona, 
-        knowledgeBase
+        knowledgeBase,
+        webhookUrl,
+        customDomain,
+        removeBranding,
+        isMultiStep
       );
     }, 800);
 
     return () => {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     };
-  }, [title, description, fields, status, botName, botGreeting, botPersona, knowledgeBase, triggerSave]);
+  }, [
+    title, 
+    description, 
+    fields, 
+    status, 
+    botName, 
+    botGreeting, 
+    botPersona, 
+    knowledgeBase, 
+    webhookUrl, 
+    customDomain, 
+    removeBranding, 
+    isMultiStep, 
+    triggerSave
+  ]);
 
   const handleTogglePublish = async () => {
     const nextStatus = status === "published" ? "draft" : "published";
@@ -165,7 +208,11 @@ export function FormEditor({ initialForm }: FormEditorProps) {
       botName, 
       botGreeting, 
       botPersona, 
-      knowledgeBase
+      knowledgeBase,
+      webhookUrl,
+      customDomain,
+      removeBranding,
+      isMultiStep
     );
   };
 
@@ -203,6 +250,7 @@ export function FormEditor({ initialForm }: FormEditorProps) {
       type,
       label: `New ${type.charAt(0).toUpperCase() + type.slice(1)} Question`,
       required: false,
+      page: 1,
       options: ["select", "radio", "checkbox"].includes(type)
         ? ["Option 1", "Option 2", "Option 3"]
         : undefined,
@@ -226,6 +274,7 @@ export function FormEditor({ initialForm }: FormEditorProps) {
   };
 
   const selectedField = fields.find((f) => f.id === selectedFieldId);
+  const otherFields = fields.filter((f) => f.id !== selectedFieldId);
 
   return (
     <div className="space-y-6">
@@ -281,7 +330,7 @@ export function FormEditor({ initialForm }: FormEditorProps) {
         {/* Action Controls & Tab Switcher */}
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Tab Switcher */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl">
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl overflow-x-auto">
             <button
               onClick={() => setActiveTab("editor")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
@@ -302,7 +351,18 @@ export function FormEditor({ initialForm }: FormEditorProps) {
               }`}
             >
               <BookOpen className="w-3.5 h-3.5" />
-              Bot & Knowledge
+              Bot & FAQs
+            </button>
+            <button
+              onClick={() => setActiveTab("integrations")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                activeTab === "integrations"
+                  ? "bg-white text-indigo-700 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-500" />
+              Integrations
             </button>
             <button
               onClick={() => setActiveTab("preview")}
@@ -347,13 +407,26 @@ export function FormEditor({ initialForm }: FormEditorProps) {
             }`}
           >
             <Globe className="w-3.5 h-3.5" />
-            {status === "published" ? "Unpublish Form" : "Publish Form"}
+            {status === "published" ? "Unpublish" : "Publish"}
           </button>
         </div>
       </div>
 
       {/* Mode View Switcher */}
-      {activeTab === "knowledge" ? (
+      {activeTab === "integrations" ? (
+        <IntegrationsTab
+          formId={initialForm.id}
+          formTitle={title}
+          webhookUrl={webhookUrl}
+          customDomain={customDomain}
+          removeBranding={removeBranding}
+          onUpdateSettings={(newSettings) => {
+            if (newSettings.webhookUrl !== undefined) setWebhookUrl(newSettings.webhookUrl);
+            if (newSettings.customDomain !== undefined) setCustomDomain(newSettings.customDomain);
+            if (newSettings.removeBranding !== undefined) setRemoveBranding(newSettings.removeBranding);
+          }}
+        />
+      ) : activeTab === "knowledge" ? (
         /* Knowledge Base & Persona Settings Tab */
         <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 max-w-4xl mx-auto">
           <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
@@ -369,7 +442,6 @@ export function FormEditor({ initialForm }: FormEditorProps) {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Bot Name */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                 Bot Name
@@ -383,7 +455,6 @@ export function FormEditor({ initialForm }: FormEditorProps) {
               />
             </div>
 
-            {/* Bot Persona / Tone */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                 AI Tone & Persona
@@ -401,7 +472,6 @@ export function FormEditor({ initialForm }: FormEditorProps) {
             </div>
           </div>
 
-          {/* Custom Welcome Greeting */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
               Custom Opening Welcome Greeting (Optional)
@@ -415,7 +485,6 @@ export function FormEditor({ initialForm }: FormEditorProps) {
             />
           </div>
 
-          {/* Knowledge Base & FAQs Textarea */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
@@ -427,7 +496,7 @@ export function FormEditor({ initialForm }: FormEditorProps) {
               </span>
             </div>
             <p className="text-xs text-slate-500 mb-2">
-              Paste your company background, pricing, FAQs, return policies, or instructions below. If respondents ask questions during the chat, the bot will answer accurately!
+              Paste your company background, pricing, FAQs, return policies, or instructions below.
             </p>
             <textarea
               rows={8}
@@ -436,8 +505,8 @@ export function FormEditor({ initialForm }: FormEditorProps) {
               placeholder={`Example:
 - Business Name: Artisan Bakery Co.
 - Hours: Mon-Sat 7am to 6pm, Sunday 8am to 2pm.
-- Catering: We offer gluten-free sourdough and pastries for orders over 10 people.
-- Return policy: If you are unsatisfied with your order, we provide full refunds within 24 hours.`}
+- Pricing: Subscription starts at $29/month with 14-day free trial.
+- Return policy: Full refunds within 24 hours.`}
               className="w-full text-sm font-mono text-slate-800 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition resize-y leading-relaxed"
             />
           </div>
@@ -449,7 +518,7 @@ export function FormEditor({ initialForm }: FormEditorProps) {
             <div className="mb-6 p-3 bg-indigo-500/20 border border-indigo-500/30 rounded-2xl text-xs text-indigo-200 flex items-center justify-between">
               <span className="flex items-center gap-2 font-medium">
                 <Bot className="w-4 h-4 text-indigo-400" />
-                Live interactive Jotform-style AI Chatbot preview. Fill it out conversationally!
+                Live interactive Jotform-style AI Chatbot preview.
               </span>
               <Link
                 href={`/c/${initialForm.id}`}
@@ -478,7 +547,7 @@ export function FormEditor({ initialForm }: FormEditorProps) {
             <div className="mb-6 p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-700 flex items-center justify-between">
               <span className="flex items-center gap-2 font-medium">
                 <Eye className="w-4 h-4" />
-                Live interactive preview of your classic web form.
+                Live interactive preview with conditional logic & multi-step wizard.
               </span>
               <Link
                 href={`/f/${initialForm.id}`}
@@ -496,6 +565,7 @@ export function FormEditor({ initialForm }: FormEditorProps) {
                 title,
                 description,
                 fieldsJson: fields,
+                isMultiStep,
               }}
               isPreview={true}
             />
@@ -531,6 +601,26 @@ export function FormEditor({ initialForm }: FormEditorProps) {
                   className="w-full text-sm text-slate-700 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition resize-none"
                   placeholder="Provide instructions or background for respondents..."
                 />
+              </div>
+
+              {/* Multi-Step Wizard Toggle */}
+              <div className="pt-2 flex items-center justify-between p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-indigo-600" />
+                  <div>
+                    <span className="text-xs font-bold text-slate-900 block">Multi-Step Wizard Form</span>
+                    <span className="text-[11px] text-slate-500">Break questions across progressive pages with a progress bar.</span>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isMultiStep}
+                    onChange={(e) => setIsMultiStep(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                </label>
               </div>
             </div>
 
@@ -584,25 +674,17 @@ export function FormEditor({ initialForm }: FormEditorProps) {
                               <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
                                 {field.type}
                               </span>
+                              {field.conditionalRule?.fieldId && (
+                                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <Split className="w-2.5 h-2.5" /> Conditional
+                                </span>
+                              )}
                             </div>
 
                             {field.placeholder && (
                               <p className="text-xs text-slate-400 mt-1 truncate">
                                 Placeholder: &quot;{field.placeholder}&quot;
                               </p>
-                            )}
-
-                            {field.options && field.options.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {field.options.map((opt, i) => (
-                                  <span
-                                    key={i}
-                                    className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200"
-                                  >
-                                    {opt}
-                                  </span>
-                                ))}
-                              </div>
                             )}
                           </div>
                         </div>
@@ -711,20 +793,94 @@ export function FormEditor({ initialForm }: FormEditorProps) {
                     </label>
                   </div>
 
-                  {["text", "email", "number", "textarea"].includes(selectedField.type) && (
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Placeholder Text
-                      </label>
-                      <input
-                        type="text"
-                        value={selectedField.placeholder || ""}
-                        onChange={(e) => handleUpdateField(selectedField.id, { placeholder: e.target.value })}
-                        placeholder="e.g. Type your answer here..."
-                        className="w-full text-sm text-slate-900 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-                      />
+                  {/* Conditional Logic Rule Section */}
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                        <Split className="w-3.5 h-3.5 text-indigo-600" />
+                        Conditional Show/Hide Logic
+                      </span>
+                      {selectedField.conditionalRule?.fieldId && (
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateField(selectedField.id, { conditionalRule: undefined })}
+                          className="text-[10px] font-bold text-red-600 hover:underline"
+                        >
+                          Clear Rule
+                        </button>
+                      )}
                     </div>
-                  )}
+
+                    <div className="space-y-2">
+                      <label className="block text-[11px] text-slate-600 font-medium">
+                        Show this question only when:
+                      </label>
+                      <select
+                        value={selectedField.conditionalRule?.fieldId || ""}
+                        onChange={(e) => {
+                          const targetFieldId = e.target.value;
+                          if (!targetFieldId) {
+                            handleUpdateField(selectedField.id, { conditionalRule: undefined });
+                          } else {
+                            handleUpdateField(selectedField.id, {
+                              conditionalRule: {
+                                fieldId: targetFieldId,
+                                operator: selectedField.conditionalRule?.operator || "equals",
+                                value: selectedField.conditionalRule?.value || "",
+                              },
+                            });
+                          }
+                        }}
+                        className="w-full text-xs text-slate-900 px-3 py-1.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="">-- Always show (No condition) --</option>
+                        {otherFields.map((f) => (
+                          <option key={f.id} value={f.id}>
+                            Question: {f.label}
+                          </option>
+                        ))}
+                      </select>
+
+                      {selectedField.conditionalRule?.fieldId && (
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <select
+                            value={selectedField.conditionalRule.operator}
+                            onChange={(e) => {
+                              handleUpdateField(selectedField.id, {
+                                conditionalRule: {
+                                  ...selectedField.conditionalRule!,
+                                  operator: e.target.value as any,
+                                },
+                              });
+                            }}
+                            className="text-xs text-slate-900 px-2 py-1.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                          >
+                            <option value="equals">Equals</option>
+                            <option value="not_equals">Does Not Equal</option>
+                            <option value="contains">Contains</option>
+                            <option value="is_not_empty">Is Answered</option>
+                          </select>
+
+                          {selectedField.conditionalRule.operator !== "is_not_empty" && (
+                            <input
+                              type="text"
+                              value={selectedField.conditionalRule.value || ""}
+                              onChange={(e) => {
+                                handleUpdateField(selectedField.id, {
+                                  conditionalRule: {
+                                    ...selectedField.conditionalRule!,
+                                    value: e.target.value,
+                                  },
+                                });
+                              }}
+                              placeholder="Target Answer..."
+                              className="text-xs text-slate-900 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
                   {["select", "radio", "checkbox"].includes(selectedField.type) && (
                     <div className="space-y-2 pt-2 border-t border-slate-100">
@@ -803,96 +959,96 @@ export function FormEditor({ initialForm }: FormEditorProps) {
               </button>
             </div>
 
-            <div className="space-y-4">
-              {/* Option 1: AI Chatbot Link */}
-              <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
-                    <Bot className="w-4 h-4 text-indigo-600" />
-                    Interactive AI Chatbot Link
-                  </span>
-                  <Link
-                    href={`/c/${initialForm.id}`}
-                    target="_blank"
-                    className="text-[11px] font-semibold text-indigo-600 hover:underline flex items-center gap-1"
-                  >
-                    Open <ExternalLink className="w-3 h-3" />
-                  </Link>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    readOnly
-                    value={chatbotUrl}
-                    className="flex-1 text-xs text-slate-700 px-3 py-2 bg-white border border-indigo-200 rounded-xl font-mono select-all"
-                  />
-                  <button
-                    onClick={() => copyToClipboard(chatbotUrl, setCopiedChatbotLink)}
-                    className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold transition flex items-center gap-1"
-                  >
-                    {copiedChatbotLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copiedChatbotLink ? "Copied!" : "Copy"}
-                  </button>
-                </div>
+            {/* Option 1: AI Chatbot URL */}
+            <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                  <Bot className="w-4 h-4 text-indigo-600" />
+                  1. Standalone AI Chatbot Link
+                </span>
+                <span className="text-[10px] font-bold text-indigo-700 bg-white px-2 py-0.5 rounded-full border border-indigo-200">
+                  Recommended
+                </span>
               </div>
-
-              {/* Option 2: Classic Web Form Link */}
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <Eye className="w-4 h-4 text-slate-600" />
-                    Classic Web Form Link
-                  </span>
-                  <Link
-                    href={`/f/${initialForm.id}`}
-                    target="_blank"
-                    className="text-[11px] font-semibold text-slate-600 hover:underline flex items-center gap-1"
-                  >
-                    Open <ExternalLink className="w-3 h-3" />
-                  </Link>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    readOnly
-                    value={publicFormUrl}
-                    className="flex-1 text-xs text-slate-700 px-3 py-2 bg-white border border-slate-300 rounded-xl font-mono select-all"
-                  />
-                  <button
-                    onClick={() => copyToClipboard(publicFormUrl, setCopiedLink)}
-                    className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold transition flex items-center gap-1"
-                  >
-                    {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copiedLink ? "Copied!" : "Copy"}
-                  </button>
-                </div>
-              </div>
-
-              {/* Option 3: Embed Widget Snippet */}
-              <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
-                    <Code className="w-4 h-4 text-indigo-400" />
-                    Embed Floating Website Widget (1-Line Code)
-                  </span>
-                  <button
-                    onClick={() => copyToClipboard(embedSnippet, setCopiedEmbedSnippet)}
-                    className="text-[11px] font-bold text-indigo-300 hover:text-white flex items-center gap-1"
-                  >
-                    {copiedEmbedSnippet ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copiedEmbedSnippet ? "Snippet Copied!" : "Copy Code"}
-                  </button>
-                </div>
-                <p className="text-[11px] text-slate-400">
-                  Paste this before &lt;/body&gt; in your HTML, Shopify, WordPress, or Webflow site to display the floating AI chat bubble:
-                </p>
-                <textarea
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
                   readOnly
-                  rows={2}
-                  value={embedSnippet}
-                  className="w-full text-xs font-mono bg-slate-950 border border-slate-800 text-indigo-200 p-2.5 rounded-xl select-all resize-none"
+                  value={chatbotUrl}
+                  className="flex-1 text-xs text-slate-700 bg-white border border-indigo-200 rounded-xl px-3 py-2 font-mono"
                 />
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(chatbotUrl, setCopiedChatbotLink)}
+                  className="px-3 py-2 text-xs font-semibold text-indigo-700 bg-white border border-indigo-200 rounded-xl hover:bg-indigo-50 transition flex items-center gap-1"
+                >
+                  {copiedChatbotLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedChatbotLink ? "Copied" : "Copy"}</span>
+                </button>
               </div>
+            </div>
+
+            {/* Option 2: 1-Line Floating Website Embed */}
+            <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                  <Code className="w-4 h-4 text-indigo-400" />
+                  2. 1-Line Floating Website Widget Embed
+                </span>
+                <span className="text-[10px] font-bold text-emerald-400 bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700">
+                  Shopify & Webflow
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={embedSnippet}
+                  className="flex-1 text-xs text-indigo-200 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(embedSnippet, setCopiedEmbedSnippet)}
+                  className="px-3 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition flex items-center gap-1"
+                >
+                  {copiedEmbedSnippet ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedEmbedSnippet ? "Copied" : "Copy"}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Option 3: Classic Form URL */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Eye className="w-4 h-4 text-slate-600" />
+                3. Classic Web Form URL
+              </span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={publicFormUrl}
+                  className="flex-1 text-xs text-slate-700 bg-white border border-slate-200 rounded-xl px-3 py-2 font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(publicFormUrl, setCopiedLink)}
+                  className="px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition flex items-center gap-1"
+                >
+                  {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedLink ? "Copied" : "Copy"}</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowShareModal(false)}
+                className="px-5 py-2 text-xs font-semibold bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition"
+              >
+                Done
+              </button>
             </div>
           </div>
         </div>
@@ -900,29 +1056,33 @@ export function FormEditor({ initialForm }: FormEditorProps) {
 
       {/* Add Field Modal */}
       {showAddFieldModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-lg font-bold text-slate-900">Choose Field Type</h3>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Add New Question</h3>
+                <p className="text-xs text-slate-500">Choose a question type to add to your form.</p>
+              </div>
               <button
                 onClick={() => setShowAddFieldModal(false)}
-                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg"
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 transition"
               >
                 ✕
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[60vh] overflow-y-auto pr-1">
-              {AVAILABLE_FIELD_TYPES.map((fType) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-1">
+              {AVAILABLE_FIELD_TYPES.map((t) => (
                 <button
-                  key={fType.type}
-                  onClick={() => handleAddNewField(fType.type)}
-                  className="p-3 text-left rounded-xl border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/50 transition group"
+                  key={t.type}
+                  type="button"
+                  onClick={() => handleAddNewField(t.type)}
+                  className="p-3.5 rounded-2xl border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/40 text-left transition group"
                 >
-                  <p className="font-semibold text-slate-900 text-sm group-hover:text-indigo-600">
-                    {fType.label}
+                  <p className="font-semibold text-slate-900 text-xs group-hover:text-indigo-600 transition">
+                    {t.label}
                   </p>
-                  <p className="text-xs text-slate-500 mt-0.5">{fType.description}</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">{t.description}</p>
                 </button>
               ))}
             </div>
