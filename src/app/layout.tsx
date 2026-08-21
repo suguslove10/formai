@@ -6,6 +6,11 @@ import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
+// Render every page at request time. The ClerkProvider decision depends on
+// runtime env; a statically prerendered page would bake in the build-time
+// answer and mismatch the live middleware (useSession-outside-provider crash).
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "FormAI — Intelligent AI Form Builder SaaS",
   description: "Describe your form in plain English and let Claude generate, customize, publish, and collect responses seamlessly.",
