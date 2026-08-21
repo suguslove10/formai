@@ -513,13 +513,17 @@ export function FormEditor({ initialForm }: FormEditorProps) {
             </label>
             <div className="flex items-start gap-4">
               {/* Live preview: shows the photo when set, else the selected emoji */}
-              <div className="w-14 h-14 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-2xl overflow-hidden flex-shrink-0">
+              <div
+                className={`w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-2xl overflow-hidden flex-shrink-0 ${
+                  botAvatarUrl.trim() ? "p-[3px] shadow-sm" : "bg-slate-100"
+                }`}
+              >
                 {botAvatarUrl.trim() ? (
                   <img
                     src={botAvatarUrl.trim()}
                     alt="Bot avatar preview"
                     referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover rounded-xl"
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).style.display = "none";
                     }}

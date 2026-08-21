@@ -43,11 +43,20 @@
       transform: scale(1.08);
       box-shadow: 0 15px 30px -5px rgba(79, 70, 229, 0.5);
     }
+    .formai-widget-button.formai-has-avatar {
+      background: #ffffff;
+      padding: 3px;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.35), 0 0 0 2px rgba(255, 255, 255, 0.9);
+    }
+    .formai-widget-button.formai-has-avatar:hover {
+      box-shadow: 0 15px 30px -5px rgba(15, 23, 42, 0.45), 0 0 0 2px rgba(255, 255, 255, 0.9);
+    }
     .formai-widget-button img {
       width: 100%;
       height: 100%;
       object-fit: cover;
       border-radius: 50%;
+      display: block;
     }
     .formai-widget-iframe-container {
       position: fixed;
@@ -162,10 +171,16 @@
     hideTeaser();
     if (isOpen) {
       container.classList.add("open");
+      btn.classList.remove("formai-has-avatar");
       btn.innerHTML = closeIconSvg;
     } else {
       container.classList.remove("open");
-      btn.innerHTML = hasAvatarPhoto ? btn.dataset.avatarHtml : chatIconSvg;
+      if (hasAvatarPhoto) {
+        btn.classList.add("formai-has-avatar");
+        btn.innerHTML = btn.dataset.avatarHtml;
+      } else {
+        btn.innerHTML = chatIconSvg;
+      }
     }
   };
 
@@ -189,6 +204,7 @@
         const avatarHtml = `<img src="${config.botAvatarUrl}" alt="${(config.botName || "Chat").replace(/"/g, "")}" referrerpolicy="no-referrer" />`;
         btn.dataset.avatarHtml = avatarHtml;
         hasAvatarPhoto = true;
+        btn.classList.add("formai-has-avatar");
         if (!isOpen) btn.innerHTML = avatarHtml;
       }
 

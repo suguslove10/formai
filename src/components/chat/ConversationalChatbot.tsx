@@ -270,12 +270,16 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
       >
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl shadow-md bg-white/15 border border-white/20 overflow-hidden">
+            <div
+              className={`w-10 h-10 rounded-2xl flex items-center justify-center text-xl shadow-md border border-white/20 overflow-hidden ${
+                botAvatarUrl ? "bg-white p-[3px]" : "bg-white/15"
+              }`}
+            >
               <BotAvatar
                 avatarUrl={botAvatarUrl}
                 emoji={botAvatar}
                 botName={botName}
-                className="w-full h-full rounded-2xl"
+                className={botAvatarUrl ? "w-full h-full rounded-xl" : "w-full h-full rounded-2xl"}
               />
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-slate-900 animate-pulse"></span>
@@ -325,12 +329,16 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
               className={`flex items-end gap-2.5 ${isBot ? "justify-start" : "justify-end"} animate-in fade-in slide-in-from-bottom-2 duration-200`}
             >
               {isBot && (
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-base shadow-sm bg-white border border-slate-200 overflow-hidden">
+                <div
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-base shadow-sm bg-white border border-slate-200 overflow-hidden ${
+                    botAvatarUrl ? "p-[2.5px]" : ""
+                  }`}
+                >
                   <BotAvatar
                     avatarUrl={botAvatarUrl}
                     emoji={botAvatar}
                     botName={botName}
-                    className="w-full h-full rounded-xl"
+                    className={botAvatarUrl ? "w-full h-full rounded-lg" : "w-full h-full rounded-xl"}
                   />
                 </div>
               )}
