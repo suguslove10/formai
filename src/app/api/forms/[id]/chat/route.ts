@@ -168,7 +168,7 @@ ${JSON.stringify(collectedData, null, 2)}
 1. **Multi-Entity Extraction**: If the user provides multiple answers in a single response (e.g. "I'm Sarah, email is sarah@co.com and rating is 5"), extract ALL of them simultaneously into 'extractedFields'!
 2. **Knowledge Base Q&A**: If the user asks a question about the business, services, pricing, or instructions, answer clearly using the Knowledge Base above, then seamlessly guide them to the next unanswered question.
 3. **One Conversational Step at a Time**: Only ask for the next missing question. Keep your replies concise, warm, and natural.
-4. **Completion**: When all mandatory questions have been answered, thank the user warmly.
+4. **Completion**: Set isComplete=true ONLY when every required question has a real collected answer in "Currently Collected Answers" plus your newly extracted fields. A greeting, an off-topic question, or an unrelated statement is NEVER an answer — if any required field is still missing, keep isComplete=false and ask for the next missing one. When truly complete, thank the user warmly.
 
 Always call the tool 'update_form_progress' with your reply, any newly extracted field values, next question ID, and completion status.`;
 
@@ -241,6 +241,22 @@ Always call the tool 'update_form_progress' with your reply, any newly extracted
       if (toolCall && toolCall.type === "function" && toolCall.function?.arguments) {
         const result = JSON.parse(toolCall.function.arguments);
         const updatedData = { ...collectedData, ...result.extractedFields };
+
+        // Server-side completion guard: never trust the model's isComplete
+        // claim. A conversation is only complete when every required field
+        // actually has a collected value — otherwise redirect to the first
+        // missing one instead of saving a half-empty response.
+        const missingRequired = fields.filter(
+          (f) =>
+            f.required &&
+            (updatedData[f.id] === undefined || updatedData[f.id] === null || updatedData[f.id] === "")
+        );
+        if (result.isComplete && missingRequired.length > 0) {
+          result.isComplete = false;
+          const nextMissing = missingRequired[0];
+          result.nextActiveFieldId = nextMissing.id;
+          result.replyMessage = `${result.replyMessage ? result.replyMessage + "\n\n" : ""}Before we wrap up, could you share your ${nextMissing.label}?`;
+        }
 
         let responseId: string | null = null;
         // If complete, persist response with AI Sentiment, Lead Score & Summary in PostgreSQL
