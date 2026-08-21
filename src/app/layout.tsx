@@ -16,8 +16,16 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const pubKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || "";
-  const isRealClerkKey = pubKey.startsWith("pk_test_") && !pubKey.includes("example.com") && !pubKey.includes("placeholder");
+  // Runtime-first key resolution: CLERK_PUBLISHABLE_KEY works even when the
+  // NEXT_PUBLIC_ variant wasn't available at build time (see middleware.ts).
+  const pubKey =
+    process.env.CLERK_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+    "";
+  const isRealClerkKey =
+    /^pk_(test|live)_/.test(pubKey) &&
+    !pubKey.includes("example.com") &&
+    !pubKey.includes("placeholder");
 
   const content = (
     <html lang="en">
@@ -29,7 +37,9 @@ export default function RootLayout({
   );
 
   if (isRealClerkKey) {
-    return <ClerkProvider>{content}</ClerkProvider>;
+    // Pass the key explicitly so the client gets it at request time instead
+    // of relying on build-time env inlining
+    return <ClerkProvider publishableKey={pubKey}>{content}</ClerkProvider>;
   }
 
   return content;

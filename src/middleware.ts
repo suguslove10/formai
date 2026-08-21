@@ -1,9 +1,15 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || "";
+// CLERK_PUBLISHABLE_KEY (no NEXT_PUBLIC_ prefix) is read at RUNTIME — the
+// NEXT_PUBLIC_ variant gets inlined at build time and is empty when the
+// platform doesn't pass build args (e.g. Dokploy). Set both in production.
+const publishableKey =
+  process.env.CLERK_PUBLISHABLE_KEY ||
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+  "";
 const isPlaceholderKey =
-  !publishableKey ||
+  !/^pk_(test|live)_/.test(publishableKey) ||
   publishableKey.includes("example.com") ||
   publishableKey.includes("placeholder");
 
@@ -24,11 +30,14 @@ export default isPlaceholderKey
   ? function middleware() {
       return NextResponse.next();
     }
-  : clerkMiddleware((auth, req) => {
-      if (!isPublicRoute(req)) {
-        auth().protect();
-      }
-    });
+  : clerkMiddleware(
+      (auth, req) => {
+        if (!isPublicRoute(req)) {
+          auth().protect();
+        }
+      },
+      { publishableKey }
+    );
 
 export const config = {
   matcher: [
