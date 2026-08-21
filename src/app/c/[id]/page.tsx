@@ -72,6 +72,7 @@ export default async function ChatbotPage({ params }: ChatbotPageProps) {
             themeColor: form.themeColor,
             botName: form.botName,
             botAvatar: form.botAvatar,
+            botAvatarUrl: form.botAvatarUrl,
           }}
         />
 

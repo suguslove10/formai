@@ -24,6 +24,7 @@ const isPublicRoute = createRouteMatcher([
   "/embed/(.*)",
   "/api/forms/:id/submit",
   "/api/forms/:id/chat",
+  "/api/forms/:id/widget-config",
 ]);
 
 export default isPlaceholderKey

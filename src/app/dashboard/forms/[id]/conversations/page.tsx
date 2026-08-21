@@ -47,6 +47,7 @@ export default async function ConversationsPage({ params }: ConversationsPagePro
         title: form.title,
         botName: form.botName,
         botAvatar: form.botAvatar,
+        botAvatarUrl: form.botAvatarUrl,
         status: form.status,
       }}
       conversations={form.conversations.map((c) => ({

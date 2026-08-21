@@ -55,6 +55,11 @@ export const UpdateFormSchema = z.object({
   botGreeting: z.string().optional(),
   botPersona: z.string().optional(),
   botAvatar: z.string().max(16).optional(),
+  botAvatarUrl: z
+    .string()
+    .max(2048)
+    .refine((v) => v === "" || /^https?:\/\//i.test(v), "Avatar image must be an http(s) URL")
+    .optional(),
   knowledgeBase: z.string().optional(),
   
   // Enterprise settings

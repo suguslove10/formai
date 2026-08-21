@@ -63,6 +63,7 @@ interface FormEditorProps {
     botGreeting?: string | null;
     botPersona?: string;
     botAvatar?: string;
+    botAvatarUrl?: string | null;
     knowledgeBase?: string | null;
     webhookUrl?: string | null;
     customDomain?: string | null;
@@ -84,6 +85,7 @@ export function FormEditor({ initialForm }: FormEditorProps) {
   const [botGreeting, setBotGreeting] = useState(initialForm.botGreeting || "");
   const [botPersona, setBotPersona] = useState(initialForm.botPersona || "friendly");
   const [botAvatar, setBotAvatar] = useState(initialForm.botAvatar || "🤖");
+  const [botAvatarUrl, setBotAvatarUrl] = useState(initialForm.botAvatarUrl || "");
   const [knowledgeBase, setKnowledgeBase] = useState(initialForm.knowledgeBase || "");
   const [importUrl, setImportUrl] = useState("");
   const [isImporting, setIsImporting] = useState(false);
@@ -132,6 +134,7 @@ export function FormEditor({ initialForm }: FormEditorProps) {
         botGreeting,
         botPersona,
         botAvatar,
+        botAvatarUrl,
         knowledgeBase,
         webhookUrl,
         customDomain: customDomain || undefined,
@@ -172,6 +175,7 @@ export function FormEditor({ initialForm }: FormEditorProps) {
       botGreeting,
       botPersona,
       botAvatar,
+      botAvatarUrl,
       knowledgeBase,
       webhookUrl,
       customDomain,
@@ -507,22 +511,70 @@ export function FormEditor({ initialForm }: FormEditorProps) {
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
               Bot Avatar
             </label>
-            <div className="flex flex-wrap gap-2">
-              {["🤖", "💬", "👩‍💼", "🧑‍💻", "🎧", "🦉", "⚡", "💡", "🌟", "🛎️"].map((emoji) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  onClick={() => setBotAvatar(emoji)}
-                  aria-label={`Use ${emoji} as bot avatar`}
-                  className={`w-11 h-11 rounded-xl text-xl flex items-center justify-center border transition ${
-                    botAvatar === emoji
-                      ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500/30"
-                      : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white"
-                  }`}
-                >
-                  {emoji}
-                </button>
-              ))}
+            <div className="flex items-start gap-4">
+              {/* Live preview: shows the photo when set, else the selected emoji */}
+              <div className="w-14 h-14 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-2xl overflow-hidden flex-shrink-0">
+                {botAvatarUrl.trim() ? (
+                  <img
+                    src={botAvatarUrl.trim()}
+                    alt="Bot avatar preview"
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <span aria-hidden="true">{botAvatar}</span>
+                )}
+              </div>
+
+              <div className="flex-1 space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  {["🤖", "💬", "👩‍💼", "🧑‍💻", "🎧", "🦉", "⚡", "💡", "🌟", "🛎️"].map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => setBotAvatar(emoji)}
+                      aria-label={`Use ${emoji} as bot avatar`}
+                      className={`w-10 h-10 rounded-xl text-lg flex items-center justify-center border transition ${
+                        !botAvatarUrl.trim() && botAvatar === emoji
+                          ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500/30"
+                          : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white"
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+
+                <div>
+                  <p className="text-[11px] font-semibold text-slate-500 mb-1">
+                    Or use a custom photo (paste an image URL)
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={botAvatarUrl}
+                      onChange={(e) => setBotAvatarUrl(e.target.value)}
+                      placeholder="https://yoursite.com/photo.jpg"
+                      className="flex-1 text-xs text-slate-900 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition font-mono"
+                    />
+                    {botAvatarUrl.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => setBotAvatarUrl("")}
+                        className="px-3 py-2 text-xs font-semibold text-slate-500 hover:text-red-600 bg-slate-50 hover:bg-red-50 border border-slate-200 hover:border-red-200 rounded-xl transition whitespace-nowrap"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Use a square headshot or logo for best results — shown in the chat header, every bot reply, and the floating widget button on your site.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -629,6 +681,7 @@ export function FormEditor({ initialForm }: FormEditorProps) {
                 themeColor,
                 botName,
                 botAvatar,
+                botAvatarUrl,
               }}
             />
           </div>

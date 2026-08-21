@@ -37,8 +37,42 @@ interface ConversationalChatbotProps {
     themeColor?: string;
     botName?: string;
     botAvatar?: string;
+    botAvatarUrl?: string | null;
   };
   isEmbed?: boolean;
+}
+
+// Renders the bot's photo avatar when set, falling back to the emoji.
+function BotAvatar({
+  avatarUrl,
+  emoji,
+  botName,
+  className,
+}: {
+  avatarUrl?: string | null;
+  emoji: string;
+  botName: string;
+  className: string;
+}) {
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={botName}
+        referrerPolicy="no-referrer"
+        className={`${className} object-cover`}
+        onError={(e) => {
+          // Broken image URL: hide it so the emoji fallback isn't hidden behind it
+          (e.currentTarget as HTMLImageElement).style.display = "none";
+        }}
+      />
+    );
+  }
+  return (
+    <span className={className} aria-hidden="true">
+      {emoji}
+    </span>
+  );
 }
 
 export function ConversationalChatbot({ form, isEmbed = false }: ConversationalChatbotProps) {
@@ -46,6 +80,7 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
   const accent = form.themeColor || "#4f46e5";
   const botName = form.botName || "FormAI Assistant";
   const botAvatar = form.botAvatar || "🤖";
+  const botAvatarUrl = form.botAvatarUrl || null;
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -235,11 +270,13 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
       >
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div
-              className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl shadow-md bg-white/15 border border-white/20"
-              aria-hidden="true"
-            >
-              {botAvatar}
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl shadow-md bg-white/15 border border-white/20 overflow-hidden">
+              <BotAvatar
+                avatarUrl={botAvatarUrl}
+                emoji={botAvatar}
+                botName={botName}
+                className="w-full h-full rounded-2xl"
+              />
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-slate-900 animate-pulse"></span>
           </div>
@@ -288,11 +325,13 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
               className={`flex items-end gap-2.5 ${isBot ? "justify-start" : "justify-end"} animate-in fade-in slide-in-from-bottom-2 duration-200`}
             >
               {isBot && (
-                <div
-                  className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-base shadow-sm bg-white border border-slate-200"
-                  aria-hidden="true"
-                >
-                  {botAvatar}
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-base shadow-sm bg-white border border-slate-200 overflow-hidden">
+                  <BotAvatar
+                    avatarUrl={botAvatarUrl}
+                    emoji={botAvatar}
+                    botName={botName}
+                    className="w-full h-full rounded-xl"
+                  />
                 </div>
               )}
 

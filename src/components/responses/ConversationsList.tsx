@@ -29,14 +29,37 @@ interface ConversationsListProps {
     title: string;
     botName?: string;
     botAvatar?: string;
+    botAvatarUrl?: string | null;
     status: "draft" | "published";
   };
   conversations: ConversationRecord[];
 }
 
+function AvatarThumb({ url, emoji, className }: { url?: string | null; emoji: string; className: string }) {
+  if (url) {
+    return (
+      <img
+        src={url}
+        alt=""
+        referrerPolicy="no-referrer"
+        className={`${className} object-cover`}
+        onError={(e) => {
+          (e.currentTarget as HTMLImageElement).style.display = "none";
+        }}
+      />
+    );
+  }
+  return (
+    <span className={className} aria-hidden="true">
+      {emoji}
+    </span>
+  );
+}
+
 export function ConversationsList({ form, conversations }: ConversationsListProps) {
   const [selected, setSelected] = useState<ConversationRecord | null>(null);
   const botAvatar = form.botAvatar || "🤖";
+  const botAvatarUrl = form.botAvatarUrl || null;
 
   const completedCount = conversations.filter((c) => c.isComplete).length;
   const abandonedCount = conversations.length - completedCount;
@@ -55,7 +78,9 @@ export function ConversationsList({ form, conversations }: ConversationsListProp
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xl" aria-hidden="true">{botAvatar}</span>
+              <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center">
+                <AvatarThumb url={botAvatarUrl} emoji={botAvatar} className="w-full h-full text-xl rounded-lg" />
+              </div>
               <h1 className="font-bold text-slate-900 text-lg sm:text-xl">
                 {form.botName || "FormAI Assistant"} — Conversations
               </h1>
@@ -122,8 +147,8 @@ export function ConversationsList({ form, conversations }: ConversationsListProp
                     onClick={() => setSelected(conv)}
                     className="w-full text-left p-4 sm:px-6 hover:bg-indigo-50/30 transition flex items-center gap-4"
                   >
-                    <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-lg flex-shrink-0" aria-hidden="true">
-                      {botAvatar}
+                    <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-lg flex-shrink-0 overflow-hidden">
+                      <AvatarThumb url={botAvatarUrl} emoji={botAvatar} className="w-full h-full rounded-xl" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -180,8 +205,8 @@ export function ConversationsList({ form, conversations }: ConversationsListProp
                 return (
                   <div key={i} className={`flex items-end gap-2 ${isBot ? "justify-start" : "justify-end"}`}>
                     {isBot && (
-                      <span className="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-sm flex-shrink-0" aria-hidden="true">
-                        {botAvatar}
+                      <span className="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-sm flex-shrink-0 overflow-hidden">
+                        <AvatarThumb url={botAvatarUrl} emoji={botAvatar} className="w-full h-full rounded-lg" />
                       </span>
                     )}
                     <div

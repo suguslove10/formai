@@ -32,6 +32,7 @@ const PUBLIC_FORM_FIELDS = {
   botGreeting: true,
   botPersona: true,
   botAvatar: true,
+  botAvatarUrl: true,
   isMultiStep: true,
   themeColor: true,
   removeBranding: true,
@@ -123,6 +124,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     if (parsed.data.botGreeting !== undefined) updateData.botGreeting = parsed.data.botGreeting;
     if (parsed.data.botPersona !== undefined) updateData.botPersona = parsed.data.botPersona;
     if (parsed.data.botAvatar !== undefined) updateData.botAvatar = parsed.data.botAvatar;
+    if (parsed.data.botAvatarUrl !== undefined) updateData.botAvatarUrl = parsed.data.botAvatarUrl.trim() || null;
     if (parsed.data.knowledgeBase !== undefined) updateData.knowledgeBase = parsed.data.knowledgeBase;
     
     // Enterprise fields

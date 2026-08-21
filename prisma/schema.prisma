@@ -78,6 +78,7 @@ model Form {
   botGreeting    String?
   botPersona     String       @default("friendly")
   botAvatar      String       @default("🤖") // emoji avatar shown in chat
+  botAvatarUrl   String?      // custom photo avatar (image URL); overrides emoji
   knowledgeBase  String?
   
   // Enterprise fields

@@ -41,6 +41,7 @@ export default async function EmbedChatbotPage({ params }: EmbedPageProps) {
           themeColor: form.themeColor,
           botName: form.botName,
           botAvatar: form.botAvatar,
+          botAvatarUrl: form.botAvatarUrl,
         }}
         isEmbed={true}
       />

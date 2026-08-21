@@ -48,6 +48,7 @@ export default async function FormEditPage({ params }: FormEditPageProps) {
         botGreeting: form.botGreeting,
         botPersona: form.botPersona,
         botAvatar: form.botAvatar,
+        botAvatarUrl: form.botAvatarUrl,
         knowledgeBase: form.knowledgeBase,
         webhookUrl: form.webhookUrl,
         customDomain: form.customDomain,
