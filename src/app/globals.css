@@ -53,6 +53,66 @@ body {
   color: hsl(var(--foreground));
   background: #f8fafc;
   min-height: 100vh;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Visible keyboard focus everywhere */
+:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+::selection {
+  background: #6366f1;
+  color: #fff;
+}
+
+/* Soft entrance used across cards and sections */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rise-in {
+  animation: rise-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.rise-in-1 { animation-delay: 0.05s; }
+.rise-in-2 { animation-delay: 0.12s; }
+.rise-in-3 { animation-delay: 0.2s; }
+@media (prefers-reduced-motion: reduce) {
+  .rise-in, .rise-in-1, .rise-in-2, .rise-in-3 {
+    animation: none;
+  }
+}
+
+/* Dotted grid ground for hero sections */
+.dot-grid {
+  background-image: radial-gradient(circle, rgba(99, 102, 241, 0.14) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+
+/* Gradient headline text */
+.text-gradient {
+  background: linear-gradient(100deg, #4f46e5 0%, #7c3aed 55%, #db2777 110%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Card hover lift used on dashboard grids */
+.lift {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 36px -16px rgba(15, 23, 42, 0.18);
 }
 
 /* Glassmorphic card styling */

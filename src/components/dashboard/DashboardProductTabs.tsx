@@ -80,40 +80,44 @@ export function DashboardProductTabs({ forms, userEmail, initialTab = "forms" }:
   return (
     <div className="space-y-8">
       {/* Header & Stats Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-8 border-b border-slate-200">
         <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-              Dashboard
-            </h1>
-            <span className="text-xs font-semibold px-2.5 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full">
-              Full Suite
-            </span>
-          </div>
-          <p className="text-sm text-slate-600">
-            Logged in as <span className="font-semibold text-slate-900">{userEmail}</span>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600 mb-2">
+            Workspace
+          </p>
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+            Welcome back 👋
+          </h1>
+          <p className="text-sm text-slate-500 mt-1.5">
+            <span className="font-semibold text-slate-800">{userEmail}</span> · everything you build lives here
           </p>
         </div>
 
         {/* Stats Row */}
-        <div className="flex items-center gap-3">
-          <div className="bg-white border border-slate-200 px-4 py-2.5 rounded-2xl shadow-sm text-center min-w-[100px]">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Assets</p>
-            <p className="text-lg font-bold text-slate-900">{totalItems}</p>
-          </div>
-          <div className="bg-white border border-slate-200 px-4 py-2.5 rounded-2xl shadow-sm text-center min-w-[100px]">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Live & Active</p>
-            <p className="text-lg font-bold text-indigo-600">{publishedItems}</p>
-          </div>
-          <div className="bg-white border border-slate-200 px-4 py-2.5 rounded-2xl shadow-sm text-center min-w-[100px]">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Submissions</p>
-            <p className="text-lg font-bold text-emerald-600">{totalResponses}</p>
-          </div>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: "Assets", value: totalItems, Icon: Layers, tone: "text-slate-900 bg-slate-100" },
+            { label: "Live", value: publishedItems, Icon: CheckCircle2, tone: "text-indigo-600 bg-indigo-50" },
+            { label: "Responses", value: totalResponses, Icon: Inbox, tone: "text-emerald-600 bg-emerald-50" },
+          ].map(({ label, value, Icon, tone }) => (
+            <div
+              key={label}
+              className="bg-white border border-slate-200 px-4 py-3 rounded-2xl shadow-sm flex items-center gap-3 min-w-[120px]"
+            >
+              <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${tone}`}>
+                <Icon className="w-4.5 h-4.5 w-[18px] h-[18px]" />
+              </span>
+              <div>
+                <p className="text-xl font-extrabold text-slate-900 leading-none tabular-nums">{value}</p>
+                <p className="text-[11px] font-medium text-slate-500 mt-1">{label}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Main Two-Product Switcher Tabs */}
-      <div className="bg-slate-200/70 p-1.5 rounded-2xl flex items-center max-w-md shadow-inner">
+      <div className="bg-slate-100 border border-slate-200 p-1.5 rounded-2xl flex items-center max-w-lg">
         <button
           type="button"
           onClick={() => switchTab("forms")}
@@ -185,7 +189,7 @@ export function DashboardProductTabs({ forms, userEmail, initialTab = "forms" }:
                 return (
                   <div
                     key={form.id}
-                    className="bg-white rounded-3xl border border-slate-200/90 hover:border-slate-300 hover:shadow-md transition p-5 flex flex-col justify-between"
+                    className="lift bg-white rounded-3xl border border-slate-200/90 hover:border-slate-300 p-5 flex flex-col justify-between"
                   >
                     <div>
                       <div className="flex items-start justify-between gap-2 mb-3">
@@ -307,7 +311,7 @@ export function DashboardProductTabs({ forms, userEmail, initialTab = "forms" }:
                 return (
                   <div
                     key={bot.id}
-                    className="bg-white rounded-3xl border border-indigo-100 hover:border-indigo-300 hover:shadow-lg transition p-5 flex flex-col justify-between relative overflow-hidden"
+                    className="lift bg-white rounded-3xl border border-indigo-100 hover:border-indigo-300 p-5 flex flex-col justify-between relative overflow-hidden before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-gradient-to-r before:from-indigo-500 before:to-violet-500"
                   >
                     {/* Bot Top Header */}
                     <div>

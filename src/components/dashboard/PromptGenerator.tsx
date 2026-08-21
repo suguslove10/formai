@@ -68,7 +68,8 @@ export function PromptGenerator({
   const activePrompts = productType === "chatbot" ? CHATBOT_STARTER_PROMPTS : FORM_STARTER_PROMPTS;
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+    <div className="rounded-[26px] p-[1.5px] bg-gradient-to-r from-indigo-500/50 via-violet-500/50 to-indigo-500/50 shadow-lg shadow-indigo-500/10">
+    <div className="bg-white rounded-3xl p-6 sm:p-8 space-y-6">
       {/* Product Selection Mode Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
         <div className="flex items-center gap-3">
@@ -118,7 +119,7 @@ export function PromptGenerator({
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             disabled={loading}
-            rows={3}
+            rows={4}
             placeholder={
               productType === "chatbot"
                 ? "e.g. Create a 24/7 Customer Support FAQ Chatbot that answers shipping questions and collects user emails..."
@@ -178,6 +179,7 @@ export function PromptGenerator({
           ))}
         </div>
       </div>
+    </div>
     </div>
   );
 }
