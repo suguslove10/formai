@@ -265,7 +265,9 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
     <div className={`flex flex-col h-full bg-white ${isEmbed ? "rounded-none" : "rounded-3xl border border-slate-200/90 shadow-2xl overflow-hidden max-w-3xl mx-auto"} min-h-[580px] max-h-[85vh]`}>
       {/* Bot Header */}
       <header
-        className="text-white p-4 sm:p-5 flex items-center justify-between shadow-md"
+        className={`text-white pl-4 sm:pl-5 pt-4 sm:pt-5 pb-4 sm:pb-5 flex items-center justify-between shadow-md ${
+          isEmbed ? "pr-14" : "pr-4 sm:pr-5"
+        }`}
         style={{ background: `linear-gradient(120deg, #0f172a 0%, ${accent} 130%)` }}
       >
         <div className="flex items-center gap-3">

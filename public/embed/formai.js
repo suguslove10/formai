@@ -89,6 +89,31 @@
       height: 100%;
       border: none;
     }
+    .formai-widget-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.18);
+      border: none;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 999999;
+      transition: background 0.15s ease;
+    }
+    .formai-widget-close:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    .formai-widget-button.formai-hidden {
+      opacity: 0;
+      transform: scale(0.6);
+      pointer-events: none;
+    }
     .formai-teaser {
       position: fixed;
       bottom: 30px;
@@ -133,23 +158,31 @@
   `;
   document.head.appendChild(style);
 
-  // Create Container & Iframe
+  // Create Container & Iframe, with an in-panel close button overlaying the
+  // top-right of the chat header (matches how most chat widgets place the
+  // close control, instead of a separate floating circle below the panel).
   const container = document.createElement("div");
   container.className = "formai-widget-iframe-container";
-  container.innerHTML = `<iframe class="formai-widget-iframe" src="${embedUrl}" title="FormAI Chatbot"></iframe>`;
+  container.innerHTML = `
+    <iframe class="formai-widget-iframe" src="${embedUrl}" title="FormAI Chatbot"></iframe>
+    <button type="button" class="formai-widget-close" aria-label="Close chat">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  `;
   document.body.appendChild(container);
+  const closeBtn = container.querySelector(".formai-widget-close");
 
   const chatIconSvg = `
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
     </svg>`;
-  const closeIconSvg = `
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <line x1="18" y1="6" x2="6" y2="18"></line>
-      <line x1="6" y1="6" x2="18" y2="18"></line>
-    </svg>`;
 
-  // Create Floating Button (icon by default; swapped for a photo avatar once config loads)
+  // Create Floating Launcher Button (icon by default; swapped for a photo
+  // avatar once config loads). Hidden while the panel is open — the close
+  // button inside the panel takes over.
   const btn = document.createElement("button");
   btn.className = "formai-widget-button";
   btn.setAttribute("aria-label", "Open FormAI Chatbot");
@@ -166,23 +199,21 @@
     } catch (e) {}
   }
 
-  btn.onclick = function () {
-    isOpen = !isOpen;
+  function openChat() {
+    isOpen = true;
     hideTeaser();
-    if (isOpen) {
-      container.classList.add("open");
-      btn.classList.remove("formai-has-avatar");
-      btn.innerHTML = closeIconSvg;
-    } else {
-      container.classList.remove("open");
-      if (hasAvatarPhoto) {
-        btn.classList.add("formai-has-avatar");
-        btn.innerHTML = btn.dataset.avatarHtml;
-      } else {
-        btn.innerHTML = chatIconSvg;
-      }
-    }
-  };
+    container.classList.add("open");
+    btn.classList.add("formai-hidden");
+  }
+
+  function closeChat() {
+    isOpen = false;
+    container.classList.remove("open");
+    btn.classList.remove("formai-hidden");
+  }
+
+  btn.onclick = openChat;
+  closeBtn.onclick = closeChat;
 
   document.body.appendChild(btn);
 
@@ -218,18 +249,18 @@
         teaser.className = "formai-teaser";
         teaser.textContent = config.greeting;
 
-        const closeBtn = document.createElement("span");
-        closeBtn.className = "formai-teaser-close";
-        closeBtn.setAttribute("aria-label", "Dismiss");
-        closeBtn.textContent = "✕";
-        closeBtn.onclick = function (e) {
+        const teaserCloseBtn = document.createElement("span");
+        teaserCloseBtn.className = "formai-teaser-close";
+        teaserCloseBtn.setAttribute("aria-label", "Dismiss");
+        teaserCloseBtn.textContent = "✕";
+        teaserCloseBtn.onclick = function (e) {
           e.stopPropagation();
           hideTeaser();
         };
-        teaser.appendChild(closeBtn);
+        teaser.appendChild(teaserCloseBtn);
 
         teaser.addEventListener("click", function () {
-          if (!isOpen) btn.onclick();
+          if (!isOpen) openChat();
         });
 
         document.body.appendChild(teaser);
