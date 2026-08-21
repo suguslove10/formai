@@ -60,12 +60,15 @@
     }
     .formai-widget-iframe-container {
       position: fixed;
-      bottom: 96px;
+      /* Anchored at the same bottom-right corner the launcher button
+         occupies, so opening the chat fills that spot directly instead
+         of floating above unused space where the button used to be. */
+      bottom: 24px;
       right: 24px;
       width: 400px;
       max-width: calc(100vw - 32px);
       height: 620px;
-      max-height: calc(100vh - 120px);
+      max-height: calc(100vh - 48px);
       border-radius: 24px;
       overflow: hidden;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
