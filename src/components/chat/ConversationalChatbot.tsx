@@ -298,15 +298,20 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleResetChat}
-          className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-xl transition text-xs flex items-center gap-1"
-          title="Restart Conversation"
-        >
-          <RotateCcw className="w-4 h-4" />
-          <span className="hidden sm:inline">Restart</span>
-        </button>
+        {/* In embed mode the host page's close button already occupies this
+            corner — a second icon here reads as clutter next to it. The
+            completion card's "Submit Another Response" covers restarting. */}
+        {!isEmbed && (
+          <button
+            type="button"
+            onClick={handleResetChat}
+            className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-xl transition text-xs flex items-center gap-1"
+            title="Restart Conversation"
+          >
+            <RotateCcw className="w-4 h-4" />
+            <span className="hidden sm:inline">Restart</span>
+          </button>
+        )}
       </header>
 
       {/* Progress Bar */}
