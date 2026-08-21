@@ -70,19 +70,23 @@ export default async function PublicFormPage({ params }: PublicFormPageProps) {
             title: form.title,
             description: form.description,
             fieldsJson: (form.fieldsJson as unknown as FormFieldType[]) || [],
+            isMultiStep: form.isMultiStep,
+            themeColor: form.themeColor,
           }}
         />
 
-        {/* FormAI Brand Footer */}
-        <div className="text-center pt-4">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-600 font-medium transition"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-            Powered by <span className="font-bold text-slate-700">FormAI</span>
-          </Link>
-        </div>
+        {/* FormAI Brand Footer (hidden for white-labeled forms) */}
+        {!form.removeBranding && (
+          <div className="text-center pt-4">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-600 font-medium transition"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+              Powered by <span className="font-bold text-slate-700">FormAI</span>
+            </Link>
+          </div>
+        )}
       </div>
     </main>
   );

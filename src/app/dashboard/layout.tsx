@@ -19,18 +19,21 @@ export default async function DashboardLayout({
   const effectiveUserId = user?.id || "demo_user";
   const effectiveEmail = user?.emailAddresses?.[0]?.emailAddress || "demo@formai.app";
 
-  // Sync user record to Postgres if possible
-  try {
-    await prisma.user.upsert({
-      where: { clerkId: effectiveUserId },
-      update: { email: effectiveEmail },
-      create: {
-        clerkId: effectiveUserId,
-        email: effectiveEmail,
-      },
-    });
-  } catch (err) {
-    console.warn("DB user sync skipped:", err);
+  // Sync user record to Postgres if possible (skip the demo identity
+  // unless DEMO_MODE is explicitly enabled)
+  if (user || process.env.DEMO_MODE === "true") {
+    try {
+      await prisma.user.upsert({
+        where: { clerkId: effectiveUserId },
+        update: { email: effectiveEmail },
+        create: {
+          clerkId: effectiveUserId,
+          email: effectiveEmail,
+        },
+      });
+    } catch (err) {
+      console.warn("DB user sync skipped:", err);
+    }
   }
 
   return (

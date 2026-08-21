@@ -3,6 +3,12 @@
  * Configured for MVP with 10 generations per minute window per user.
  */
 
+export function getClientIp(req: Request): string {
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return req.headers.get("x-real-ip") || "unknown";
+}
+
 interface RateLimitRecord {
   count: number;
   resetTime: number;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
   FileText, 
@@ -30,6 +31,7 @@ interface FormItem {
   description?: string | null;
   fieldsJson: any;
   status: "draft" | "published";
+  type?: "form" | "chatbot";
   botName?: string;
   botPersona?: string;
   knowledgeBase?: string | null;
@@ -42,15 +44,28 @@ interface FormItem {
 interface DashboardProductTabsProps {
   forms: FormItem[];
   userEmail: string;
+  initialTab?: "forms" | "chatbots";
 }
 
-export function DashboardProductTabs({ forms, userEmail }: DashboardProductTabsProps) {
-  const [activeTab, setActiveTab] = useState<"forms" | "chatbots">("forms");
+export function DashboardProductTabs({ forms, userEmail, initialTab = "forms" }: DashboardProductTabsProps) {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<"forms" | "chatbots">(initialTab);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const switchTab = (tab: "forms" | "chatbots") => {
+    setActiveTab(tab);
+    router.replace(`/dashboard?view=${tab}`, { scroll: false });
+  };
+
+  // Each product tab only shows its own assets
+  const classicForms = forms.filter((f) => (f.type || "form") === "form");
+  const chatbots = forms.filter((f) => f.type === "chatbot");
 
   const totalItems = forms.length;
   const publishedItems = forms.filter((f) => f.status === "published").length;
   const totalResponses = forms.reduce((sum, f) => sum + (f._count?.responses || 0), 0);
+  const publishedForms = classicForms.filter((f) => f.status === "published").length;
+  const publishedBots = chatbots.filter((f) => f.status === "published").length;
 
   const handleCopyEmbed = (formId: string) => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -101,7 +116,7 @@ export function DashboardProductTabs({ forms, userEmail }: DashboardProductTabsP
       <div className="bg-slate-200/70 p-1.5 rounded-2xl flex items-center max-w-md shadow-inner">
         <button
           type="button"
-          onClick={() => setActiveTab("forms")}
+          onClick={() => switchTab("forms")}
           className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition ${
             activeTab === "forms"
               ? "bg-white text-slate-900 shadow-md"
@@ -110,12 +125,12 @@ export function DashboardProductTabs({ forms, userEmail }: DashboardProductTabsP
         >
           <FileText className="w-4 h-4 text-slate-700" />
           <span>Product 1: Classic Forms</span>
-          <span className="text-[10px] px-1.5 py-0.2 bg-slate-100 rounded-full font-mono">{totalItems}</span>
+          <span className="text-[10px] px-1.5 py-0.2 bg-slate-100 rounded-full font-mono">{classicForms.length}</span>
         </button>
 
         <button
           type="button"
-          onClick={() => setActiveTab("chatbots")}
+          onClick={() => switchTab("chatbots")}
           className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition ${
             activeTab === "chatbots"
               ? "bg-indigo-600 text-white shadow-md shadow-indigo-300"
@@ -126,12 +141,15 @@ export function DashboardProductTabs({ forms, userEmail }: DashboardProductTabsP
           <span>Product 2: AI Chatbots</span>
           <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
             activeTab === "chatbots" ? "bg-indigo-700 text-white" : "bg-indigo-100 text-indigo-700"
-          }`}>{totalItems}</span>
+          }`}>{chatbots.length}</span>
         </button>
       </div>
 
       {/* Unified AI Generator configured to current mode */}
-      <PromptGenerator />
+      <PromptGenerator
+        key={activeTab}
+        defaultProductType={activeTab === "chatbots" ? "chatbot" : "form"}
+      />
 
       {/* Product Content Sections */}
       {activeTab === "forms" ? (
@@ -141,14 +159,14 @@ export function DashboardProductTabs({ forms, userEmail }: DashboardProductTabsP
             <div>
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 <FileText className="w-5 h-5 text-slate-700" />
-                Your Web Forms ({totalItems})
+                Your Web Forms ({classicForms.length})
               </h2>
               <p className="text-xs text-slate-500">Traditional multi-field web pages for desktop & mobile.</p>
             </div>
-            <span className="text-xs text-slate-500">{publishedItems} Published</span>
+            <span className="text-xs text-slate-500">{publishedForms} Published</span>
           </div>
 
-          {forms.length === 0 ? (
+          {classicForms.length === 0 ? (
             <div className="bg-white rounded-3xl border border-dashed border-slate-300 p-12 text-center">
               <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-4">
                 <FileText className="w-6 h-6" />
@@ -160,7 +178,7 @@ export function DashboardProductTabs({ forms, userEmail }: DashboardProductTabsP
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {forms.map((form) => {
+              {classicForms.map((form) => {
                 const fieldCount = Array.isArray(form.fieldsJson) ? form.fieldsJson.length : 0;
                 const isPublished = form.status === "published";
 
@@ -262,14 +280,14 @@ export function DashboardProductTabs({ forms, userEmail }: DashboardProductTabsP
             <div>
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 <Bot className="w-5 h-5 text-indigo-600" />
-                Your AI Chatbot Assistants ({totalItems})
+                Your AI Chatbot Assistants ({chatbots.length})
               </h2>
               <p className="text-xs text-slate-500">Conversational Q&A agents with Knowledge Base and embeddable website widgets.</p>
             </div>
-            <span className="text-xs text-indigo-600 font-semibold">{publishedItems} Active Bots</span>
+            <span className="text-xs text-indigo-600 font-semibold">{publishedBots} Active Bots</span>
           </div>
 
-          {forms.length === 0 ? (
+          {chatbots.length === 0 ? (
             <div className="bg-white rounded-3xl border border-dashed border-indigo-200 p-12 text-center">
               <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-4">
                 <Bot className="w-6 h-6" />
@@ -281,7 +299,7 @@ export function DashboardProductTabs({ forms, userEmail }: DashboardProductTabsP
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {forms.map((bot) => {
+              {chatbots.map((bot) => {
                 const isPublished = bot.status === "published";
                 const isCopied = copiedId === bot.id;
                 const hasKnowledge = !!bot.knowledgeBase;
@@ -351,6 +369,14 @@ export function DashboardProductTabs({ forms, userEmail }: DashboardProductTabsP
                       </button>
 
                       <div className="flex items-center gap-1.5">
+                        <Link
+                          href={`/dashboard/forms/${bot.id}/conversations`}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition"
+                          title="View Conversation Transcripts"
+                        >
+                          <MessageSquareQuote className="w-3.5 h-3.5" />
+                          <span>Chats</span>
+                        </Link>
                         <Link
                           href={`/dashboard/forms/${bot.id}/edit`}
                           className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition"

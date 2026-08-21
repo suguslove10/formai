@@ -31,9 +31,7 @@ export default async function FormResponsesPage({ params }: FormResponsesPagePro
     notFound();
   }
 
-  const effectiveUserId = userId || "demo_user";
-
-  if (form.userId !== effectiveUserId && form.userId !== "demo_user") {
+  if (form.userId !== userId) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center text-red-700">
         <h2 className="text-lg font-bold">Unauthorized</h2>

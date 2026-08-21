@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { 
   Save, 
   Eye, 
@@ -29,8 +30,7 @@ import {
   ShieldCheck,
   Zap,
   Split,
-  Layers,
-  CreditCard
+  Layers
 } from "lucide-react";
 import { FieldTypeEnum, FormFieldType, ConditionalRuleType } from "@/lib/validations/form";
 import { generateId } from "@/lib/utils";
@@ -49,12 +49,12 @@ const AVAILABLE_FIELD_TYPES: { type: FieldTypeEnum; label: string; description: 
   { type: "rating", label: "1-5 Star Rating", description: "Satisfaction, review scores" },
   { type: "date", label: "Date Picker", description: "Calendar date selection" },
   { type: "file", label: "File Upload", description: "Document or image upload" },
-  { type: "payment", label: "Stripe Payment / Deposit", description: "Collect credit card payments" },
 ];
 
 interface FormEditorProps {
   initialForm: {
     id: string;
+    type?: "form" | "chatbot";
     title: string;
     description?: string | null;
     fieldsJson: FormFieldType[];
@@ -62,6 +62,7 @@ interface FormEditorProps {
     botName?: string;
     botGreeting?: string | null;
     botPersona?: string;
+    botAvatar?: string;
     knowledgeBase?: string | null;
     webhookUrl?: string | null;
     customDomain?: string | null;
@@ -72,6 +73,7 @@ interface FormEditorProps {
 }
 
 export function FormEditor({ initialForm }: FormEditorProps) {
+  const isChatbot = initialForm.type === "chatbot";
   const [title, setTitle] = useState(initialForm.title);
   const [description, setDescription] = useState(initialForm.description || "");
   const [fields, setFields] = useState<FormFieldType[]>(initialForm.fieldsJson || []);
@@ -81,15 +83,23 @@ export function FormEditor({ initialForm }: FormEditorProps) {
   const [botName, setBotName] = useState(initialForm.botName || "FormAI Assistant");
   const [botGreeting, setBotGreeting] = useState(initialForm.botGreeting || "");
   const [botPersona, setBotPersona] = useState(initialForm.botPersona || "friendly");
+  const [botAvatar, setBotAvatar] = useState(initialForm.botAvatar || "🤖");
   const [knowledgeBase, setKnowledgeBase] = useState(initialForm.knowledgeBase || "");
+  const [importUrl, setImportUrl] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
 
   // Enterprise Settings
   const [webhookUrl, setWebhookUrl] = useState(initialForm.webhookUrl || "");
   const [customDomain, setCustomDomain] = useState(initialForm.customDomain || "");
   const [removeBranding, setRemoveBranding] = useState(initialForm.removeBranding || false);
   const [isMultiStep, setIsMultiStep] = useState(initialForm.isMultiStep || false);
+  const [themeColor, setThemeColor] = useState(initialForm.themeColor || "#4f46e5");
 
-  const [activeTab, setActiveTab] = useState<"editor" | "knowledge" | "integrations" | "preview" | "chatbot">("editor");
+  // Chatbots open on their live chat preview so it's immediately clear you
+  // built a chatbot; classic forms open on the question editor.
+  const [activeTab, setActiveTab] = useState<"editor" | "knowledge" | "integrations" | "preview" | "chatbot">(
+    isChatbot ? "chatbot" : "editor"
+  );
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved" | "error">("saved");
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedChatbotLink, setCopiedChatbotLink] = useState(false);
@@ -102,52 +112,73 @@ export function FormEditor({ initialForm }: FormEditorProps) {
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Debounced Autosave to PATCH /api/forms/[id]
+  const saveAbortRef = useRef<AbortController | null>(null);
+
   const triggerSave = useCallback(
-    async (
-      updatedTitle: string,
-      updatedDescription: string,
-      updatedFields: FormFieldType[],
-      updatedStatus: "draft" | "published",
-      updatedBotName: string,
-      updatedBotGreeting: string,
-      updatedBotPersona: string,
-      updatedKnowledgeBase: string,
-      updatedWebhookUrl: string,
-      updatedCustomDomain: string,
-      updatedRemoveBranding: boolean,
-      updatedIsMultiStep: boolean
-    ) => {
+    async (overrides: Partial<Record<string, any>> = {}) => {
       setSaveStatus("saving");
+
+      // Cancel any in-flight save so an older request can't overwrite a newer one
+      saveAbortRef.current?.abort();
+      const controller = new AbortController();
+      saveAbortRef.current = controller;
+
+      const payload = {
+        title,
+        description,
+        fields,
+        status,
+        botName,
+        botGreeting,
+        botPersona,
+        botAvatar,
+        knowledgeBase,
+        webhookUrl,
+        customDomain: customDomain || undefined,
+        removeBranding,
+        isMultiStep,
+        themeColor,
+        ...overrides,
+      };
+
       try {
         const res = await fetch(`/api/forms/${initialForm.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: updatedTitle,
-            description: updatedDescription,
-            fields: updatedFields,
-            status: updatedStatus,
-            botName: updatedBotName,
-            botGreeting: updatedBotGreeting,
-            botPersona: updatedBotPersona,
-            knowledgeBase: updatedKnowledgeBase,
-            webhookUrl: updatedWebhookUrl,
-            customDomain: updatedCustomDomain || undefined,
-            removeBranding: updatedRemoveBranding,
-            isMultiStep: updatedIsMultiStep,
-          }),
+          body: JSON.stringify(payload),
+          signal: controller.signal,
         });
 
         if (!res.ok) {
           throw new Error("Save request failed");
         }
         setSaveStatus("saved");
-      } catch (err) {
+      } catch (err: any) {
+        if (err?.name === "AbortError") return; // superseded by a newer save
         console.error("Autosave error:", err);
         setSaveStatus("error");
+        toast.error("Autosave failed", {
+          description: "Your latest changes are not saved. Check your connection and keep editing to retry.",
+        });
       }
     },
-    [initialForm.id]
+    [
+      initialForm.id,
+      title,
+      description,
+      fields,
+      status,
+      botName,
+      botGreeting,
+      botPersona,
+      botAvatar,
+      knowledgeBase,
+      webhookUrl,
+      customDomain,
+      removeBranding,
+      isMultiStep,
+      themeColor,
+    ]
   );
 
   useEffect(() => {
@@ -162,58 +193,35 @@ export function FormEditor({ initialForm }: FormEditorProps) {
     }
 
     debounceTimerRef.current = setTimeout(() => {
-      triggerSave(
-        title, 
-        description, 
-        fields, 
-        status, 
-        botName, 
-        botGreeting, 
-        botPersona, 
-        knowledgeBase,
-        webhookUrl,
-        customDomain,
-        removeBranding,
-        isMultiStep
-      );
+      triggerSave();
     }, 800);
 
     return () => {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     };
-  }, [
-    title, 
-    description, 
-    fields, 
-    status, 
-    botName, 
-    botGreeting, 
-    botPersona, 
-    knowledgeBase, 
-    webhookUrl, 
-    customDomain, 
-    removeBranding, 
-    isMultiStep, 
-    triggerSave
-  ]);
+  }, [triggerSave]);
+
+  // Warn before leaving with unsaved changes still in the debounce window
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (saveStatus === "unsaved" || saveStatus === "saving") {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [saveStatus]);
 
   const handleTogglePublish = async () => {
     const nextStatus = status === "published" ? "draft" : "published";
     setStatus(nextStatus);
-    await triggerSave(
-      title, 
-      description, 
-      fields, 
-      nextStatus, 
-      botName, 
-      botGreeting, 
-      botPersona, 
-      knowledgeBase,
-      webhookUrl,
-      customDomain,
-      removeBranding,
-      isMultiStep
-    );
+    await triggerSave({ status: nextStatus });
+    toast.success(nextStatus === "published" ? "Form published" : "Form unpublished", {
+      description:
+        nextStatus === "published"
+          ? "Your form is live and accepting responses."
+          : "Your form is back in draft mode and no longer accepting responses.",
+    });
   };
 
   const handleUpdateField = (id: string, updates: Partial<FormFieldType>) => {
@@ -224,13 +232,31 @@ export function FormEditor({ initialForm }: FormEditorProps) {
 
   const handleDeleteField = (id: string) => {
     if (fields.length <= 1) {
-      alert("A form must have at least one question.");
+      toast.warning("A form must have at least one question.");
       return;
     }
-    const filtered = fields.filter((f) => f.id !== id);
+
+    // Remove the field and clear any conditional rules that referenced it —
+    // a dangling rule would silently stop working
+    let clearedRules = 0;
+    const filtered = fields
+      .filter((f) => f.id !== id)
+      .map((f) => {
+        if (f.conditionalRule?.fieldId === id) {
+          clearedRules++;
+          return { ...f, conditionalRule: undefined };
+        }
+        return f;
+      });
+
     setFields(filtered);
     if (selectedFieldId === id) {
       setSelectedFieldId(filtered[0]?.id || null);
+    }
+    if (clearedRules > 0) {
+      toast.info(
+        `Question deleted. ${clearedRules} conditional rule${clearedRules === 1 ? "" : "s"} that depended on it ${clearedRules === 1 ? "was" : "were"} removed.`
+      );
     }
   };
 
@@ -265,6 +291,31 @@ export function FormEditor({ initialForm }: FormEditorProps) {
   const chatbotUrl = `${originUrl}/c/${initialForm.id}`;
   const embedSnippet = `<script src="${originUrl}/embed/formai.js" data-form-id="${initialForm.id}"></script>`;
 
+  // Jotform-style "train with your website": server fetches the page,
+  // extracts readable text, and appends it to the knowledge base.
+  const handleImportWebsite = async () => {
+    if (!importUrl.trim() || isImporting) return;
+    setIsImporting(true);
+    try {
+      const res = await fetch(`/api/forms/${initialForm.id}/train`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: importUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Import failed");
+      setKnowledgeBase(data.knowledgeBase);
+      setImportUrl("");
+      toast.success("Website imported into the knowledge base", {
+        description: `${data.importedChars.toLocaleString()} characters of content added from ${data.sourceUrl}. Your bot can answer questions about it now.`,
+      });
+    } catch (err: any) {
+      toast.error("Website import failed", { description: err.message });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const copyToClipboard = (text: string, setCopied: (v: boolean) => void) => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text);
@@ -282,7 +333,7 @@ export function FormEditor({ initialForm }: FormEditorProps) {
       <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link
-            href="/dashboard"
+            href={`/dashboard?view=${isChatbot ? "chatbots" : "forms"}`}
             className="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition"
             title="Back to Dashboard"
           >
@@ -291,6 +342,11 @@ export function FormEditor({ initialForm }: FormEditorProps) {
           <div>
             <div className="flex items-center gap-2">
               <span className="font-bold text-slate-900 text-lg line-clamp-1">{title || "Untitled Form"}</span>
+              {isChatbot && (
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1 whitespace-nowrap">
+                  <Bot className="w-3 h-3" /> AI Chatbot
+                </span>
+              )}
               <span
                 className={`text-[11px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider ${
                   status === "published"
@@ -474,6 +530,29 @@ export function FormEditor({ initialForm }: FormEditorProps) {
 
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+              Bot Avatar
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {["🤖", "💬", "👩‍💼", "🧑‍💻", "🎧", "🦉", "⚡", "💡", "🌟", "🛎️"].map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => setBotAvatar(emoji)}
+                  aria-label={`Use ${emoji} as bot avatar`}
+                  className={`w-11 h-11 rounded-xl text-xl flex items-center justify-center border transition ${
+                    botAvatar === emoji
+                      ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500/30"
+                      : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white"
+                  }`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
               Custom Opening Welcome Greeting (Optional)
             </label>
             <input
@@ -496,8 +575,44 @@ export function FormEditor({ initialForm }: FormEditorProps) {
               </span>
             </div>
             <p className="text-xs text-slate-500 mb-2">
-              Paste your company background, pricing, FAQs, return policies, or instructions below.
+              Paste your company background, pricing, FAQs, return policies, or instructions below — or import a page from your website.
             </p>
+
+            {/* Train from website URL */}
+            <div className="flex gap-2 mb-3">
+              <input
+                type="url"
+                value={importUrl}
+                onChange={(e) => setImportUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleImportWebsite();
+                  }
+                }}
+                placeholder="https://yourcompany.com/faq — import a page from your website"
+                className="flex-1 text-xs text-slate-900 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition font-mono"
+              />
+              <button
+                type="button"
+                onClick={handleImportWebsite}
+                disabled={!importUrl.trim() || isImporting}
+                className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-sm flex items-center gap-1.5 disabled:opacity-40"
+              >
+                {isImporting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Importing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>Import Website</span>
+                  </>
+                )}
+              </button>
+            </div>
+
             <textarea
               rows={8}
               value={knowledgeBase}
@@ -536,6 +651,9 @@ export function FormEditor({ initialForm }: FormEditorProps) {
                 title,
                 description,
                 fieldsJson: fields,
+                themeColor,
+                botName,
+                botAvatar,
               }}
             />
           </div>
@@ -566,6 +684,7 @@ export function FormEditor({ initialForm }: FormEditorProps) {
                 description,
                 fieldsJson: fields,
                 isMultiStep,
+                themeColor,
               }}
               isPreview={true}
             />
@@ -601,6 +720,24 @@ export function FormEditor({ initialForm }: FormEditorProps) {
                   className="w-full text-sm text-slate-700 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition resize-none"
                   placeholder="Provide instructions or background for respondents..."
                 />
+              </div>
+
+              {/* Brand Theme Color */}
+              <div className="pt-2 flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <div>
+                  <span className="text-xs font-bold text-slate-900 block">Brand Color</span>
+                  <span className="text-[11px] text-slate-500">Used for buttons and accents on your public form and chatbot.</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-slate-500">{themeColor}</span>
+                  <input
+                    type="color"
+                    value={themeColor}
+                    onChange={(e) => setThemeColor(e.target.value)}
+                    aria-label="Brand color"
+                    className="w-9 h-9 rounded-lg border border-slate-300 cursor-pointer bg-white p-0.5"
+                  />
+                </div>
               </div>
 
               {/* Multi-Step Wizard Toggle */}
@@ -674,6 +811,11 @@ export function FormEditor({ initialForm }: FormEditorProps) {
                               <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
                                 {field.type}
                               </span>
+                              {isMultiStep && (
+                                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <Layers className="w-2.5 h-2.5" /> Page {field.page || 1}
+                                </span>
+                              )}
                               {field.conditionalRule?.fieldId && (
                                 <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full flex items-center gap-1">
                                   <Split className="w-2.5 h-2.5" /> Conditional
@@ -777,6 +919,55 @@ export function FormEditor({ initialForm }: FormEditorProps) {
                     </select>
                   </div>
 
+                  {!["select", "radio", "checkbox", "rating", "date", "file"].includes(selectedField.type) && (
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Placeholder Text
+                      </label>
+                      <input
+                        type="text"
+                        value={selectedField.placeholder || ""}
+                        onChange={(e) => handleUpdateField(selectedField.id, { placeholder: e.target.value || undefined })}
+                        placeholder="e.g. Jane Doe"
+                        className="w-full text-sm text-slate-900 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Help Text
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedField.helpText || ""}
+                      onChange={(e) => handleUpdateField(selectedField.id, { helpText: e.target.value || undefined })}
+                      placeholder="Short guidance shown below the question"
+                      className="w-full text-sm text-slate-900 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                    />
+                  </div>
+
+                  {isMultiStep && (
+                    <div className="flex items-center justify-between p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                      <div>
+                        <span className="text-xs font-semibold text-slate-900 block">Wizard Page</span>
+                        <span className="text-[11px] text-slate-500">Which step this question appears on</span>
+                      </div>
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={selectedField.page || 1}
+                        onChange={(e) => {
+                          const page = Math.max(1, Math.min(20, Number(e.target.value) || 1));
+                          handleUpdateField(selectedField.id, { page });
+                        }}
+                        aria-label="Wizard page number"
+                        className="w-20 text-sm text-slate-900 text-center px-2 py-1.5 bg-white border border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
                     <div>
                       <span className="text-xs font-semibold text-slate-900 block">Required</span>
@@ -858,6 +1049,8 @@ export function FormEditor({ initialForm }: FormEditorProps) {
                             <option value="equals">Equals</option>
                             <option value="not_equals">Does Not Equal</option>
                             <option value="contains">Contains</option>
+                            <option value="greater_than">Greater Than</option>
+                            <option value="less_than">Less Than</option>
                             <option value="is_not_empty">Is Answered</option>
                           </select>
 

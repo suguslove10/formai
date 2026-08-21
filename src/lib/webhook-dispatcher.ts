@@ -1,5 +1,15 @@
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
+import { isSafePublicUrl } from "@/lib/url-guard";
+
+const FETCH_TIMEOUT_MS = 10_000;
+
+// Stable per-form signing secret for the quick webhookUrl field (dedicated
+// Webhook records carry their own secret column).
+function quickWebhookSecret(formId: string): string {
+  const signingKey = process.env.WEBHOOK_SIGNING_SECRET || "formai-webhook-signing";
+  return crypto.createHmac("sha256", signingKey).update(formId).digest("hex");
+}
 
 export interface WebhookPayload {
   event: "response.created" | "lead.high" | "sentiment.negative";
@@ -33,7 +43,7 @@ export async function dispatchFormWebhooks(payload: WebhookPayload) {
     if (form.webhookUrl && form.webhookUrl.trim().startsWith("http")) {
       targets.push({
         url: form.webhookUrl.trim(),
-        secret: "default_secret",
+        secret: quickWebhookSecret(form.id),
         events: ["response.created", "lead.high", "sentiment.negative"],
       });
     }
@@ -51,6 +61,11 @@ export async function dispatchFormWebhooks(payload: WebhookPayload) {
     // 2. Dispatch asynchronously to each target
     const promises = targets.map(async (target) => {
       try {
+        if (!(await isSafePublicUrl(target.url))) {
+          console.warn(`Webhook blocked (unsafe destination): ${target.url}`);
+          return;
+        }
+
         const isSlack = target.url.includes("hooks.slack.com");
         const isDiscord = target.url.includes("discord.com/api/webhooks");
 
@@ -130,6 +145,7 @@ export async function dispatchFormWebhooks(payload: WebhookPayload) {
           method: "POST",
           headers,
           body: JSON.stringify(bodyToSend),
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
         });
       } catch (dispatchErr) {
         console.error(`Webhook delivery error to ${target.url}:`, dispatchErr);

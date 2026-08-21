@@ -10,10 +10,39 @@ interface RouteParams {
   };
 }
 
+// Resolve the authenticated user. Falls back to "demo_user" only when
+// DEMO_MODE=true is set explicitly (Clerk-less local development).
+function resolveUserId(): string | null {
+  let userId: string | null = null;
+  try {
+    userId = auth()?.userId ?? null;
+  } catch (e) {}
+  if (userId) return userId;
+  return process.env.DEMO_MODE === "true" ? "demo_user" : null;
+}
+
+// Fields safe to expose to someone who is not the form's owner.
+const PUBLIC_FORM_FIELDS = {
+  id: true,
+  title: true,
+  description: true,
+  fieldsJson: true,
+  status: true,
+  botName: true,
+  botGreeting: true,
+  botPersona: true,
+  botAvatar: true,
+  isMultiStep: true,
+  themeColor: true,
+  removeBranding: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 // GET /api/forms/[id] - Fetch form details
 export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
-    const { userId } = auth();
+    const userId = resolveUserId();
     const { id } = params;
 
     const form = await prisma.form.findUnique({
@@ -29,9 +58,18 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Form not found" }, { status: 404 });
     }
 
-    // If not owner, only allow if published
-    if (form.userId !== userId && form.status !== "published") {
-      return NextResponse.json({ error: "Unauthorized access to unpublished form" }, { status: 403 });
+    const isOwner = userId !== null && form.userId === userId;
+
+    // If not owner, only allow if published — and never expose private
+    // config (webhookUrl, knowledgeBase, customDomain, userId).
+    if (!isOwner) {
+      if (form.status !== "published") {
+        return NextResponse.json({ error: "Unauthorized access to unpublished form" }, { status: 403 });
+      }
+      const publicForm = Object.fromEntries(
+        Object.keys(PUBLIC_FORM_FIELDS).map((k) => [k, (form as any)[k]])
+      );
+      return NextResponse.json({ form: publicForm });
     }
 
     return NextResponse.json({ form });
@@ -44,11 +82,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 // PATCH /api/forms/[id] - Update form details (fields, title, status, etc.)
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
   try {
-    let userId: string | null = null;
-    try {
-      userId = auth()?.userId;
-    } catch (e) {}
-    const effectiveUserId = userId || "demo_user";
+    const effectiveUserId = resolveUserId();
+    if (!effectiveUserId) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
 
     const { id } = params;
     const body = await req.json().catch(() => null);
@@ -85,6 +122,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     if (parsed.data.botName !== undefined) updateData.botName = parsed.data.botName;
     if (parsed.data.botGreeting !== undefined) updateData.botGreeting = parsed.data.botGreeting;
     if (parsed.data.botPersona !== undefined) updateData.botPersona = parsed.data.botPersona;
+    if (parsed.data.botAvatar !== undefined) updateData.botAvatar = parsed.data.botAvatar;
     if (parsed.data.knowledgeBase !== undefined) updateData.knowledgeBase = parsed.data.knowledgeBase;
     
     // Enterprise fields
@@ -117,11 +155,10 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 // DELETE /api/forms/[id] - Delete form
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
   try {
-    let userId: string | null = null;
-    try {
-      userId = auth()?.userId;
-    } catch (e) {}
-    const effectiveUserId = userId || "demo_user";
+    const effectiveUserId = resolveUserId();
+    if (!effectiveUserId) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
 
     const { id } = params;
 

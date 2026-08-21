@@ -15,6 +15,11 @@ enum FormStatus {
   published
 }
 
+enum FormType {
+  form
+  chatbot
+}
+
 enum MemberRole {
   OWNER
   ADMIN
@@ -68,9 +73,11 @@ model Form {
   description    String?
   fieldsJson     Json         // Stores array of FormField according to FormSchema
   status         FormStatus   @default(draft)
+  type           FormType     @default(form) // which product this asset belongs to
   botName        String       @default("FormAI Assistant")
   botGreeting    String?
   botPersona     String       @default("friendly")
+  botAvatar      String       @default("🤖") // emoji avatar shown in chat
   knowledgeBase  String?
   
   // Enterprise fields
@@ -87,6 +94,7 @@ model Form {
   workspace      Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   responses      Response[]
   webhooks       Webhook[]
+  conversations  Conversation[]
 
   @@index([userId])
   @@index([workspaceId])
@@ -106,6 +114,24 @@ model Response {
 
   @@index([formId])
   @@map("responses")
+}
+
+// Full chat transcript for every chatbot session — completed or abandoned.
+// Powers the Conversations monitoring view.
+model Conversation {
+  id            String   @id @default(cuid())
+  formId        String
+  messagesJson  Json     // [{ role, content }] full transcript
+  collectedJson Json     // answers extracted so far
+  isComplete    Boolean  @default(false)
+  responseId    String?  // linked Response once submitted
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  form          Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([formId])
+  @@map("conversations")
 }
 
 model Webhook {

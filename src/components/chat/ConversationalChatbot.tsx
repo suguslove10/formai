@@ -34,19 +34,27 @@ interface ConversationalChatbotProps {
     title: string;
     description?: string | null;
     fieldsJson: FormFieldType[];
+    themeColor?: string;
+    botName?: string;
+    botAvatar?: string;
   };
   isEmbed?: boolean;
 }
 
 export function ConversationalChatbot({ form, isEmbed = false }: ConversationalChatbotProps) {
   const fields = form.fieldsJson || [];
+  const accent = form.themeColor || "#4f46e5";
+  const botName = form.botName || "FormAI Assistant";
+  const botAvatar = form.botAvatar || "🤖";
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [collectedData, setCollectedData] = useState<Record<string, any>>({});
   const [currentFieldId, setCurrentFieldId] = useState<string | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
-  
+  const [sessionKey, setSessionKey] = useState(0);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const hasInitialized = useRef(false);
 
@@ -78,6 +86,7 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
         });
 
         const data = await res.json();
+        if (data.conversationId) setConversationId(data.conversationId);
         if (data.reply) {
           const activeField = fields.find((f) => f.id === data.nextActiveFieldId);
           setMessages([
@@ -114,7 +123,7 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
     };
 
     startChat();
-  }, [form.id, form.title, fields]);
+  }, [form.id, form.title, fields, sessionKey]);
 
   const handleSendMessage = async (customContent?: string, fieldAnswerKey?: string, fieldAnswerValue?: any) => {
     const textToSend = customContent !== undefined ? customContent : input;
@@ -145,11 +154,13 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
         body: JSON.stringify({
           messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
           collectedData: updatedClientData,
+          conversationId,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Chat failed");
+      if (data.conversationId) setConversationId(data.conversationId);
 
       const nextField = fields.find((f) => f.id === data.nextActiveFieldId);
 
@@ -188,13 +199,16 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
     }
   };
 
+  // In-place restart: clear state and re-run the greeting, no page reload
   const handleResetChat = () => {
     hasInitialized.current = false;
     setMessages([]);
+    setInput("");
     setCollectedData({});
     setIsCompleted(false);
-    setCurrentFieldId(fields[0]?.id || null);
-    window.location.reload();
+    setCurrentFieldId(null);
+    setConversationId(null); // a restart begins a fresh transcript
+    setSessionKey((k) => k + 1);
   };
 
   // Calculate progress
@@ -208,23 +222,29 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
   return (
     <div className={`flex flex-col h-full bg-white ${isEmbed ? "rounded-none" : "rounded-3xl border border-slate-200/90 shadow-2xl overflow-hidden max-w-3xl mx-auto"} min-h-[580px] max-h-[85vh]`}>
       {/* Bot Header */}
-      <header className="bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 text-white p-4 sm:p-5 flex items-center justify-between shadow-md">
+      <header
+        className="text-white p-4 sm:p-5 flex items-center justify-between shadow-md"
+        style={{ background: `linear-gradient(120deg, #0f172a 0%, ${accent} 130%)` }}
+      >
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-500 text-white flex items-center justify-center font-bold shadow-md shadow-indigo-500/30">
-              <Bot className="w-5 h-5" />
+            <div
+              className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl shadow-md bg-white/15 border border-white/20"
+              aria-hidden="true"
+            >
+              {botAvatar}
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-slate-900 animate-pulse"></span>
           </div>
 
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="font-bold text-sm sm:text-base tracking-tight line-clamp-1">{form.title}</h2>
-              <span className="text-[10px] font-semibold px-2 py-0.5 bg-indigo-500/30 border border-indigo-400/30 text-indigo-200 rounded-full">
+              <h2 className="font-bold text-sm sm:text-base tracking-tight line-clamp-1">{botName}</h2>
+              <span className="text-[10px] font-semibold px-2 py-0.5 bg-white/15 border border-white/20 text-white/90 rounded-full">
                 AI Agent
               </span>
             </div>
-            <p className="text-xs text-slate-300">Active • Answers questions in real time</p>
+            <p className="text-xs text-white/70 line-clamp-1">{form.title}</p>
           </div>
         </div>
 
@@ -242,15 +262,18 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
       {/* Progress Bar */}
       <div className="w-full bg-slate-100 h-1.5 overflow-hidden">
         <div
-          className="bg-indigo-600 h-full transition-all duration-500 ease-out"
-          style={{ width: `${progressPercent}%` }}
+          className="h-full transition-all duration-500 ease-out"
+          style={{ width: `${progressPercent}%`, backgroundColor: accent }}
         ></div>
       </div>
 
       {/* Messages Thread */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-slate-50/50">
-        {messages.map((msg) => {
+        {messages.map((msg, msgIdx) => {
           const isBot = msg.role === "assistant";
+          // Interactive widgets only stay live on the latest message —
+          // answering an old question again would corrupt collected data
+          const isLatest = msgIdx === messages.length - 1;
 
           return (
             <div
@@ -258,8 +281,11 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
               className={`flex items-end gap-2.5 ${isBot ? "justify-start" : "justify-end"} animate-in fade-in slide-in-from-bottom-2 duration-200`}
             >
               {isBot && (
-                <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center flex-shrink-0 text-xs shadow-sm">
-                  <Bot className="w-4 h-4" />
+                <div
+                  className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-base shadow-sm bg-white border border-slate-200"
+                  aria-hidden="true"
+                >
+                  {botAvatar}
                 </div>
               )}
 
@@ -268,13 +294,14 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
                   className={`p-4 rounded-2xl text-sm leading-relaxed ${
                     isBot
                       ? "bg-white text-slate-900 border border-slate-200/90 shadow-sm rounded-bl-sm"
-                      : "bg-indigo-600 text-white shadow-md shadow-indigo-200 rounded-br-sm font-medium"
+                      : "text-white shadow-md rounded-br-sm font-medium"
                   }`}
+                  style={isBot ? undefined : { backgroundColor: accent }}
                 >
                   <p className="whitespace-pre-wrap">{msg.content}</p>
 
                   {/* Inline Rating Widget inside Bot Message */}
-                  {isBot && msg.type === "rating" && !isCompleted && (
+                  {isBot && isLatest && msg.type === "rating" && !isCompleted && (
                     <div className="mt-3 pt-3 border-t border-slate-100">
                       <p className="text-xs font-semibold text-slate-500 mb-2">Tap a star to rate:</p>
                       <div className="flex items-center gap-1.5">
@@ -293,7 +320,7 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
                   )}
 
                   {/* Inline Options Pills */}
-                  {isBot && msg.options && msg.options.length > 0 && !isCompleted && (
+                  {isBot && isLatest && msg.options && msg.options.length > 0 && !isCompleted && (
                     <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-2">
                       {msg.options.map((opt, i) => (
                         <button
@@ -309,7 +336,7 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
                   )}
 
                   {/* Inline Date Shortcut */}
-                  {isBot && msg.type === "date" && !isCompleted && (
+                  {isBot && isLatest && msg.type === "date" && !isCompleted && (
                     <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2">
                       <input
                         type="date"
@@ -392,7 +419,8 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
           <button
             type="submit"
             disabled={!input.trim() || loading}
-            className="w-11 h-11 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow-md shadow-indigo-200 disabled:opacity-40 disabled:cursor-not-allowed transition hover:scale-105 active:scale-95 flex-shrink-0"
+            style={{ backgroundColor: accent }}
+            className="w-11 h-11 rounded-2xl hover:opacity-90 text-white flex items-center justify-center shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition hover:scale-105 active:scale-95 flex-shrink-0"
           >
             <Send className="w-4 h-4" />
           </button>

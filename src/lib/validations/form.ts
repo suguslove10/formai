@@ -11,7 +11,6 @@ export const FieldType = z.enum([
   "rating",
   "file",
   "date",
-  "payment", // Stripe Payment/Deposit field
 ]);
 
 export type FieldTypeEnum = z.infer<typeof FieldType>;
@@ -55,6 +54,7 @@ export const UpdateFormSchema = z.object({
   botName: z.string().optional(),
   botGreeting: z.string().optional(),
   botPersona: z.string().optional(),
+  botAvatar: z.string().max(16).optional(),
   knowledgeBase: z.string().optional(),
   
   // Enterprise settings

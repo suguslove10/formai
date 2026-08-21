@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { FormFieldType } from "@/lib/validations/form";
 import { 
   Star, 
@@ -12,8 +13,6 @@ import {
   Send,
   Calendar,
   FileCheck,
-  CreditCard,
-  Lock,
   ChevronRight,
   ChevronLeft
 } from "lucide-react";
@@ -32,6 +31,7 @@ interface PublicFormRendererProps {
 
 export function PublicFormRenderer({ form, isPreview = false }: PublicFormRendererProps) {
   const fields = form.fieldsJson || [];
+  const accent = form.themeColor || "#4f46e5";
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -153,7 +153,9 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isPreview) {
-      alert("This is a live preview. In production, this form will submit directly to FormAI database and trigger outbound webhooks.");
+      toast.info("This is a live preview", {
+        description: "On the published form, this submission would be saved and trigger your webhooks.",
+      });
       return;
     }
 
@@ -235,9 +237,9 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
               <span>{Math.round((currentPage / maxPage) * 100)}% Completed</span>
             </div>
             <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-indigo-600 rounded-full transition-all duration-300"
-                style={{ width: `${(currentPage / maxPage) * 100}%` }}
+              <div
+                className="h-full rounded-full transition-all duration-300"
+                style={{ width: `${(currentPage / maxPage) * 100}%`, backgroundColor: accent }}
               />
             </div>
           </div>
@@ -455,40 +457,6 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
                 </div>
               )}
 
-              {/* Stripe Payment Card Field */}
-              {field.type === "payment" && (
-                <div className="p-4 rounded-2xl bg-white border border-indigo-200 shadow-sm space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                      <CreditCard className="w-4 h-4 text-indigo-600" />
-                      Secure Stripe Checkout
-                    </span>
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
-                      <Lock className="w-3 h-3" /> 256-bit Encrypted
-                    </span>
-                  </div>
-                  <input
-                    type="text"
-                    value={formData[field.id] || ""}
-                    onChange={(e) => handleInputChange(field.id, e.target.value)}
-                    placeholder="Card Number: •••• •••• •••• 4242"
-                    className="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="text"
-                      placeholder="MM / YY"
-                      className="px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <input
-                      type="text"
-                      placeholder="CVC"
-                      className="px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                </div>
-              )}
-
               {hasError && (
                 <p className="text-xs font-medium text-red-600 mt-1 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" />
@@ -516,7 +484,8 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
             <button
               type="button"
               onClick={handleNextStep}
-              className="inline-flex items-center gap-1.5 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-200 transition"
+              style={{ backgroundColor: accent }}
+              className="inline-flex items-center gap-1.5 px-6 py-3 hover:opacity-90 text-white font-bold text-xs rounded-xl shadow-md transition"
             >
               <span>Next Step</span>
               <ChevronRight className="w-4 h-4" />
@@ -525,7 +494,8 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-200 transition-all hover:scale-[1.01] disabled:opacity-50"
+              style={{ backgroundColor: accent }}
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 hover:opacity-90 text-white font-bold text-sm rounded-xl shadow-lg transition-all hover:scale-[1.01] disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>

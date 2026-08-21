@@ -12,6 +12,10 @@ export async function POST(req: NextRequest) {
       userId = authObj?.userId;
     } catch (e) {}
 
+    // "demo_user" is only allowed when DEMO_MODE=true (Clerk-less local dev)
+    if (!userId && process.env.DEMO_MODE !== "true") {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
     const effectiveUserId = userId || "demo_user";
 
     // Rate limit check
@@ -31,6 +35,7 @@ export async function POST(req: NextRequest) {
     }
 
     const userPrompt = body.prompt.trim();
+    const productType: "form" | "chatbot" = body.productType === "chatbot" ? "chatbot" : "form";
 
     // Ensure User record exists in Postgres before saving form
     try {
@@ -57,6 +62,7 @@ export async function POST(req: NextRequest) {
         description: formSchema.description || null,
         fieldsJson: formSchema.fields as any,
         status: "draft",
+        type: productType,
       },
     });
 

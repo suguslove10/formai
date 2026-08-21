@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { 
   Download, 
   ChevronLeft, 
@@ -48,7 +49,7 @@ export function ResponsesTable({ form, responses }: ResponsesTableProps) {
   // Client-Side CSV Export (RFC-4180 compliant)
   const handleExportCSV = () => {
     if (responses.length === 0) {
-      alert("No responses available to export.");
+      toast.warning("No responses available to export.");
       return;
     }
 

@@ -7,6 +7,8 @@ const isPlaceholderKey =
   publishableKey.includes("example.com") ||
   publishableKey.includes("placeholder");
 
+// Only respondent-facing endpoints are public. Form CRUD (/api/forms,
+// /api/forms/:id, /api/forms/generate) requires a signed-in session.
 const isPublicRoute = createRouteMatcher([
   "/",
   "/sign-in(.*)",
@@ -14,8 +16,8 @@ const isPublicRoute = createRouteMatcher([
   "/f/(.*)",
   "/c/(.*)",
   "/embed/(.*)",
-  "/api/forms/(.*)",
-  "/api/webhook/(.*)",
+  "/api/forms/:id/submit",
+  "/api/forms/:id/chat",
 ]);
 
 export default isPlaceholderKey

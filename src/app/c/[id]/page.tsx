@@ -69,19 +69,24 @@ export default async function ChatbotPage({ params }: ChatbotPageProps) {
             title: form.title,
             description: form.description,
             fieldsJson: (form.fieldsJson as unknown as FormFieldType[]) || [],
+            themeColor: form.themeColor,
+            botName: form.botName,
+            botAvatar: form.botAvatar,
           }}
         />
 
-        {/* Footer Branding */}
-        <div className="text-center pt-4">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-xs text-indigo-300/60 hover:text-white font-medium transition"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            Powered by <span className="font-bold text-white">FormAI Chatbot</span>
-          </Link>
-        </div>
+        {/* Footer Branding (hidden for white-labeled bots) */}
+        {!form.removeBranding && (
+          <div className="text-center pt-4">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-xs text-indigo-300/60 hover:text-white font-medium transition"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              Powered by <span className="font-bold text-white">FormAI Chatbot</span>
+            </Link>
+          </div>
+        )}
       </div>
     </main>
   );

@@ -24,31 +24,49 @@ export default async function SettingsPage() {
   const activeUserId = user?.id || "demo_user";
   const userEmail = user?.emailAddresses?.[0]?.emailAddress || "demo@formai.app";
 
-  // Fetch or create default workspace for user
+  // Fetch (or create) the workspace this user belongs to. Never fall back
+  // to another tenant's workspace.
   let workspace: any = null;
   let auditLogs: any[] = [];
   try {
-    workspace = await prisma.workspace.findFirst({
+    const membership = await prisma.workspaceMember.findFirst({
+      where: { userId: activeUserId },
       include: {
-        members: {
-          include: { user: true },
+        workspace: {
+          include: {
+            members: { include: { user: true } },
+          },
         },
       },
     });
 
-    if (!workspace) {
+    if (membership) {
+      workspace = membership.workspace;
+    } else {
+      // First visit: create a personal workspace with this user as OWNER
+      await prisma.user.upsert({
+        where: { clerkId: activeUserId },
+        update: {},
+        create: { clerkId: activeUserId, email: userEmail },
+      });
       workspace = await prisma.workspace.create({
         data: {
-          name: "Acme Corp Enterprise",
-          slug: "acme-corp",
+          name: "My Workspace",
+          members: {
+            create: { userId: activeUserId, role: "OWNER" },
+          },
         },
         include: {
-          members: true,
+          members: { include: { user: true } },
         },
       });
     }
 
+    // Audit trail scoped to this workspace and this user's own actions
     auditLogs = await prisma.auditLog.findMany({
+      where: {
+        OR: [{ workspaceId: workspace.id }, { userId: activeUserId }],
+      },
       take: 20,
       orderBy: { createdAt: "desc" },
     });
@@ -56,7 +74,7 @@ export default async function SettingsPage() {
     console.warn("Settings DB query skipped:", err);
   }
 
-  const members = workspace?.members || [];
+  const members: any[] = workspace?.members || [];
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
@@ -85,8 +103,8 @@ export default async function SettingsPage() {
               <Building2 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900">{workspace?.name || "Acme Corp Enterprise"}</h3>
-              <p className="text-xs text-slate-500 font-mono">Workspace ID: {workspace?.id || "ws_enterprise_01"}</p>
+              <h3 className="text-base font-bold text-slate-900">{workspace?.name || "My Workspace"}</h3>
+              <p className="text-xs text-slate-500 font-mono">Workspace ID: {workspace?.id || "—"}</p>
             </div>
           </div>
           <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
@@ -97,7 +115,7 @@ export default async function SettingsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
             <span className="font-semibold text-slate-500 uppercase tracking-wider block">Organization Slug</span>
-            <span className="font-mono text-slate-900 font-bold">{workspace?.slug || "acme-corp"}.formai.app</span>
+            <span className="font-mono text-slate-900 font-bold">{workspace?.slug || "—"}.formai.app</span>
           </div>
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
             <span className="font-semibold text-slate-500 uppercase tracking-wider block">Primary Owner</span>
@@ -140,40 +158,41 @@ export default async function SettingsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
-              <tr className="hover:bg-slate-50/50">
-                <td className="py-3.5 px-4 font-bold text-slate-900 flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold text-[11px] flex items-center justify-center">
-                    {userEmail.charAt(0).toUpperCase()}
-                  </div>
-                  <span>{userEmail.split("@")[0]} (You)</span>
-                </td>
-                <td className="py-3.5 px-4 text-slate-600 font-mono">{userEmail}</td>
-                <td className="py-3.5 px-4">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-purple-50 text-purple-700 border border-purple-200">
-                    <ShieldCheck className="w-3 h-3" /> OWNER
-                  </span>
-                </td>
-                <td className="py-3.5 px-4 text-emerald-600 font-semibold flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Active
-                </td>
-              </tr>
-              <tr className="hover:bg-slate-50/50">
-                <td className="py-3.5 px-4 font-medium text-slate-700 flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-700 font-bold text-[11px] flex items-center justify-center">
-                    S
-                  </div>
-                  <span>Security Officer</span>
-                </td>
-                <td className="py-3.5 px-4 text-slate-600 font-mono">security@enterprise.com</td>
-                <td className="py-3.5 px-4">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200">
-                    ADMIN
-                  </span>
-                </td>
-                <td className="py-3.5 px-4 text-emerald-600 font-semibold flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Active
-                </td>
-              </tr>
+              {members.map((member: any) => {
+                const memberEmail = member.user?.email || member.userId;
+                const isYou = member.userId === activeUserId;
+                const isOwner = member.role === "OWNER";
+
+                return (
+                  <tr key={member.id} className="hover:bg-slate-50/50">
+                    <td className="py-3.5 px-4 font-bold text-slate-900 flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold text-[11px] flex items-center justify-center">
+                        {memberEmail.charAt(0).toUpperCase()}
+                      </div>
+                      <span>
+                        {memberEmail.split("@")[0]}
+                        {isYou ? " (You)" : ""}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-600 font-mono">{memberEmail}</td>
+                    <td className="py-3.5 px-4">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
+                          isOwner
+                            ? "bg-purple-50 text-purple-700 border border-purple-200"
+                            : "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                        }`}
+                      >
+                        {isOwner && <ShieldCheck className="w-3 h-3" />}
+                        {member.role}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-emerald-600 font-semibold flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Active
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

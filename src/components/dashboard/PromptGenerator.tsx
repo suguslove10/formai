@@ -18,9 +18,13 @@ const CHATBOT_STARTER_PROMPTS = [
   "Product Recommendation Assistant with interactive ratings and preferences",
 ];
 
-export function PromptGenerator() {
+export function PromptGenerator({
+  defaultProductType = "form",
+}: {
+  defaultProductType?: "form" | "chatbot";
+}) {
   const router = useRouter();
-  const [productType, setProductType] = useState<"form" | "chatbot">("form");
+  const [productType, setProductType] = useState<"form" | "chatbot">(defaultProductType);
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +44,7 @@ export function PromptGenerator() {
       const res = await fetch("/api/forms/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: fullPrompt }),
+        body: JSON.stringify({ prompt: fullPrompt, productType }),
       });
 
       const data = await res.json();

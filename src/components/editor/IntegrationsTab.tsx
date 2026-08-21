@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { 
   Webhook, 
   Slack, 
@@ -57,7 +58,7 @@ export function IntegrationsTab({
 
   const handleTestWebhook = async () => {
     if (!webhookUrl.trim() || !webhookUrl.startsWith("http")) {
-      alert("Please enter a valid HTTP/HTTPS Webhook URL before testing.");
+      toast.warning("Enter a valid HTTP/HTTPS webhook URL before testing.");
       return;
     }
 

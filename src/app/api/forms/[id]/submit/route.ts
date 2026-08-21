@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { FormFieldType } from "@/lib/validations/form";
 import { dispatchFormWebhooks } from "@/lib/webhook-dispatcher";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import OpenAI from "openai";
 
 interface RouteParams {
@@ -13,6 +14,18 @@ interface RouteParams {
 export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
     const { id } = params;
+
+    // Per-IP rate limit: public endpoint, and each submission can trigger a
+    // paid AI analysis call plus webhook dispatches
+    const clientIp = getClientIp(req);
+    const rateLimit = checkRateLimit(`submit:${id}:${clientIp}`, 15, 60 * 1000);
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: "Too many submissions. Please wait a moment and try again." },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json().catch(() => null);
 
     if (!body || typeof body !== "object") {
@@ -137,10 +150,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Calculate AI Sentiment & Summary if OpenAI is available
-    let sentiment = "positive";
-    let leadScore = "high";
-    let aiSummary = `Submitted ${fields.length} responses for ${form.title}`;
+    // Calculate AI Sentiment & Summary if OpenAI is available. When the
+    // analysis doesn't run, store nulls — never fabricated values that would
+    // skew analytics or fire "lead.high" webhooks for every submission.
+    let sentiment: string | null = null;
+    let leadScore: string | null = null;
+    let aiSummary: string | null = null;
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (apiKey && apiKey.startsWith("sk-")) {
