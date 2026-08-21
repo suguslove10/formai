@@ -131,23 +131,22 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       const firstField = fields.find(
         (f) => collectedData[f.id] === undefined || collectedData[f.id] === null || collectedData[f.id] === ""
       );
-      const greeting = form.botGreeting.trim();
-      const conversationId = await persistConversation({
-        conversationId: incomingConversationId,
-        formId: id,
-        transcript: [...rawMessages, { role: "assistant", content: greeting }],
-        collectedData,
-        isComplete: false,
-      });
+      // Greeting-only turn: don't record a conversation yet — merely opening
+      // the widget shouldn't create an "abandoned" row. Recording starts
+      // with the visitor's first real message.
       return NextResponse.json({
-        reply: greeting,
+        reply: form.botGreeting.trim(),
         updatedData: collectedData,
         nextActiveFieldId: firstField?.id || null,
         isComplete: false,
         responseId: null,
-        conversationId,
+        conversationId: incomingConversationId,
       });
     }
+
+    // A conversation is only worth recording once the visitor has typed
+    // something beyond the automatic opening handshake.
+    const hasRealVisitorInput = rawMessages.length > 1;
 
     const botName = form.botName || "FormAI Assistant";
     const botPersona = form.botPersona || "friendly";
@@ -292,14 +291,16 @@ Always call the tool 'update_form_progress' with your reply, any newly extracted
           }
         }
 
-        const conversationId = await persistConversation({
-          conversationId: incomingConversationId,
-          formId: id,
-          transcript: [...rawMessages, { role: "assistant", content: result.replyMessage }],
-          collectedData: updatedData,
-          isComplete: !!result.isComplete,
-          responseId,
-        });
+        const conversationId = hasRealVisitorInput
+          ? await persistConversation({
+              conversationId: incomingConversationId,
+              formId: id,
+              transcript: [...rawMessages, { role: "assistant", content: result.replyMessage }],
+              collectedData: updatedData,
+              isComplete: !!result.isComplete,
+              responseId,
+            })
+          : incomingConversationId;
 
         return NextResponse.json({
           reply: result.replyMessage,
@@ -342,14 +343,16 @@ Always call the tool 'update_form_progress' with your reply, any newly extracted
       } catch (err) {}
 
       const doneReply = "🎉 Thank you so much! I have recorded all your answers.";
-      const conversationId = await persistConversation({
-        conversationId: incomingConversationId,
-        formId: id,
-        transcript: [...rawMessages, { role: "assistant", content: doneReply }],
-        collectedData: updatedData,
-        isComplete: true,
-        responseId,
-      });
+      const conversationId = hasRealVisitorInput
+        ? await persistConversation({
+            conversationId: incomingConversationId,
+            formId: id,
+            transcript: [...rawMessages, { role: "assistant", content: doneReply }],
+            collectedData: updatedData,
+            isComplete: true,
+            responseId,
+          })
+        : incomingConversationId;
 
       return NextResponse.json({
         reply: doneReply,
@@ -363,13 +366,15 @@ Always call the tool 'update_form_progress' with your reply, any newly extracted
 
     const nextField = remainingUnanswered[0];
     const nextReply = `Could you please provide your ${nextField.label}?`;
-    const conversationId = await persistConversation({
-      conversationId: incomingConversationId,
-      formId: id,
-      transcript: [...rawMessages, { role: "assistant", content: nextReply }],
-      collectedData: updatedData,
-      isComplete: false,
-    });
+    const conversationId = hasRealVisitorInput
+      ? await persistConversation({
+          conversationId: incomingConversationId,
+          formId: id,
+          transcript: [...rawMessages, { role: "assistant", content: nextReply }],
+          collectedData: updatedData,
+          isComplete: false,
+        })
+      : incomingConversationId;
 
     return NextResponse.json({
       reply: nextReply,
