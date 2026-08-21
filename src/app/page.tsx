@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { Sparkles, ArrowRight, CheckCircle2, ShieldCheck, Zap, BarChart3, Layers } from "lucide-react";
-import { auth } from "@clerk/nextjs/server";
 
-export default async function HomePage() {
-  const { userId } = auth();
-
+export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-900 flex flex-col">
       {/* Navigation Header */}

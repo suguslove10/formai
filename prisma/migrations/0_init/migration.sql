@@ -51,6 +51,7 @@ CREATE TABLE "forms" (
     "botName" TEXT NOT NULL DEFAULT 'FormAI Assistant',
     "botGreeting" TEXT,
     "botPersona" TEXT NOT NULL DEFAULT 'friendly',
+    "botAvatar" TEXT NOT NULL DEFAULT '🤖',
     "knowledgeBase" TEXT,
     "customDomain" TEXT,
     "removeBranding" BOOLEAN NOT NULL DEFAULT false,
@@ -74,6 +75,20 @@ CREATE TABLE "responses" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "responses_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "conversations" (
+    "id" TEXT NOT NULL,
+    "formId" TEXT NOT NULL,
+    "messagesJson" JSONB NOT NULL,
+    "collectedJson" JSONB NOT NULL,
+    "isComplete" BOOLEAN NOT NULL DEFAULT false,
+    "responseId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "conversations_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -128,6 +143,9 @@ CREATE INDEX "forms_workspaceId_idx" ON "forms"("workspaceId");
 CREATE INDEX "responses_formId_idx" ON "responses"("formId");
 
 -- CreateIndex
+CREATE INDEX "conversations_formId_idx" ON "conversations"("formId");
+
+-- CreateIndex
 CREATE INDEX "webhooks_formId_idx" ON "webhooks"("formId");
 
 -- CreateIndex
@@ -152,6 +170,9 @@ ALTER TABLE "forms" ADD CONSTRAINT "forms_workspaceId_fkey" FOREIGN KEY ("worksp
 ALTER TABLE "responses" ADD CONSTRAINT "responses_formId_fkey" FOREIGN KEY ("formId") REFERENCES "forms"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "conversations" ADD CONSTRAINT "conversations_formId_fkey" FOREIGN KEY ("formId") REFERENCES "forms"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "webhooks" ADD CONSTRAINT "webhooks_formId_fkey" FOREIGN KEY ("formId") REFERENCES "forms"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -160,13 +181,3 @@ ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_workspaceId_fkey" FOREIGN KE
 -- AddForeignKey
 ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("clerkId") ON DELETE CASCADE ON UPDATE CASCADE;
 
-┌─────────────────────────────────────────────────────────┐
-│  Update available 5.22.0 -> 7.9.1                       │
-│                                                         │
-│  This is a major update - please follow the guide at    │
-│  https://pris.ly/d/major-version-upgrade                │
-│                                                         │
-│  Run the following to update                            │
-│    npm i --save-dev prisma@latest                       │
-│    npm i @prisma/client@latest                          │
-└─────────────────────────────────────────────────────────┘
