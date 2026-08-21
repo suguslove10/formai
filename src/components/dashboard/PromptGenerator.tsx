@@ -24,7 +24,9 @@ export function PromptGenerator({
   defaultProductType?: "form" | "chatbot";
 }) {
   const router = useRouter();
-  const [productType, setProductType] = useState<"form" | "chatbot">(defaultProductType);
+  // The dashboard's product tab is the single source of truth for what
+  // gets created — no second switcher inside the generator.
+  const productType = defaultProductType;
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,33 +91,15 @@ export function PromptGenerator({
           </div>
         </div>
 
-        {/* Segmented Switcher */}
-        <div className="flex items-center bg-slate-100 p-1 rounded-2xl self-start sm:self-auto">
-          <button
-            type="button"
-            onClick={() => setProductType("form")}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition ${
-              productType === "form"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            AI Form
-          </button>
-          <button
-            type="button"
-            onClick={() => setProductType("chatbot")}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition ${
-              productType === "chatbot"
-                ? "bg-indigo-600 text-white shadow-sm"
-                : "text-indigo-600 hover:text-indigo-900"
-            }`}
-          >
-            <Bot className="w-3.5 h-3.5" />
-            AI Chatbot
-          </button>
-        </div>
+        <span
+          className={`self-start sm:self-auto text-[11px] font-bold px-3 py-1.5 rounded-full border ${
+            productType === "chatbot"
+              ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+              : "bg-slate-100 text-slate-700 border-slate-200"
+          }`}
+        >
+          {productType === "chatbot" ? "Creates an AI Chatbot" : "Creates a Web Form"}
+        </span>
       </div>
 
       {error && (

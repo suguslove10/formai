@@ -38,12 +38,14 @@ interface ResponsesTableProps {
     description?: string | null;
     fieldsJson: FormFieldType[];
     status: "draft" | "published";
+    type?: "form" | "chatbot";
   };
   responses: ResponseRecord[];
 }
 
 export function ResponsesTable({ form, responses }: ResponsesTableProps) {
   const fields = form.fieldsJson || [];
+  const isChatbot = form.type === "chatbot";
   const [selectedResponse, setSelectedResponse] = useState<ResponseRecord | null>(null);
 
   // Client-Side CSV Export (RFC-4180 compliant)
@@ -184,13 +186,13 @@ export function ResponsesTable({ form, responses }: ResponsesTableProps) {
 
           {form.status === "published" && (
             <Link
-              href={`/c/${form.id}`}
+              href={isChatbot ? `/c/${form.id}` : `/f/${form.id}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-xl hover:bg-indigo-100 transition shadow-sm"
             >
-              <Bot className="w-3.5 h-3.5" />
-              AI Chatbot
+              {isChatbot ? <Bot className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
+              {isChatbot ? "Open Chatbot" : "Open Form"}
             </Link>
           )}
 
@@ -215,27 +217,20 @@ export function ResponsesTable({ form, responses }: ResponsesTableProps) {
             </div>
             <h3 className="text-base font-semibold text-slate-900">No responses recorded yet</h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-6">
-              Share your Chatbot or public form link to start collecting responses from users.
+              {isChatbot
+                ? "Share your chatbot link or embed the widget on your website to start collecting responses."
+                : "Share your public form link to start collecting responses."}
             </p>
             {form.status === "published" ? (
               <div className="flex items-center justify-center gap-3">
                 <Link
-                  href={`/c/${form.id}`}
+                  href={isChatbot ? `/c/${form.id}` : `/f/${form.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-xl hover:bg-indigo-700 transition"
                 >
-                  <Bot className="w-3.5 h-3.5" />
-                  Test AI Chatbot
-                </Link>
-                <Link
-                  href={`/f/${form.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-xl hover:bg-slate-800 transition"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  Open Public Form
+                  {isChatbot ? <Bot className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                  {isChatbot ? "Test Your Chatbot" : "Open Public Form"}
                 </Link>
               </div>
             ) : (

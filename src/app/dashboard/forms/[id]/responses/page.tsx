@@ -48,6 +48,7 @@ export default async function FormResponsesPage({ params }: FormResponsesPagePro
         description: form.description,
         fieldsJson: (form.fieldsJson as unknown as FormFieldType[]) || [],
         status: form.status,
+        type: form.type,
       }}
       responses={form.responses.map((r) => ({
         id: r.id,

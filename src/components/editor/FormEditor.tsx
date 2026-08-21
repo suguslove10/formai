@@ -385,63 +385,38 @@ export function FormEditor({ initialForm }: FormEditorProps) {
 
         {/* Action Controls & Tab Switcher */}
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Tab Switcher */}
+          {/* Tab Switcher — each product shows only its own workspace.
+              Chatbots: chat-first (preview, persona, data to collect).
+              Forms: form-first (questions, preview). */}
           <div className="flex items-center bg-slate-100 p-1 rounded-xl overflow-x-auto">
-            <button
-              onClick={() => setActiveTab("editor")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                activeTab === "editor"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <Edit className="w-3.5 h-3.5" />
-              Questions
-            </button>
-            <button
-              onClick={() => setActiveTab("knowledge")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                activeTab === "knowledge"
-                  ? "bg-white text-indigo-700 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <BookOpen className="w-3.5 h-3.5" />
-              Bot & FAQs
-            </button>
-            <button
-              onClick={() => setActiveTab("integrations")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                activeTab === "integrations"
-                  ? "bg-white text-indigo-700 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <Zap className="w-3.5 h-3.5 text-amber-500" />
-              Integrations
-            </button>
-            <button
-              onClick={() => setActiveTab("preview")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                activeTab === "preview"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <Eye className="w-3.5 h-3.5" />
-              Form
-            </button>
-            <button
-              onClick={() => setActiveTab("chatbot")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                activeTab === "chatbot"
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50"
-              }`}
-            >
-              <Bot className="w-3.5 h-3.5" />
-              AI Chatbot
-            </button>
+            {(isChatbot
+              ? ([
+                  { id: "chatbot", label: "Chat Preview", Icon: Bot },
+                  { id: "knowledge", label: "Persona & Knowledge", Icon: BookOpen },
+                  { id: "editor", label: "Data to Collect", Icon: ListPlus },
+                  { id: "integrations", label: "Integrations", Icon: Zap },
+                ] as const)
+              : ([
+                  { id: "editor", label: "Questions", Icon: Edit },
+                  { id: "preview", label: "Preview", Icon: Eye },
+                  { id: "integrations", label: "Integrations", Icon: Zap },
+                ] as const)
+            ).map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+                  activeTab === id
+                    ? isChatbot
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {label}
+              </button>
+            ))}
           </div>
 
           {/* Share & Embed Button */}
@@ -740,25 +715,27 @@ export function FormEditor({ initialForm }: FormEditorProps) {
                 </div>
               </div>
 
-              {/* Multi-Step Wizard Toggle */}
-              <div className="pt-2 flex items-center justify-between p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                <div className="flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-indigo-600" />
-                  <div>
-                    <span className="text-xs font-bold text-slate-900 block">Multi-Step Wizard Form</span>
-                    <span className="text-[11px] text-slate-500">Break questions across progressive pages with a progress bar.</span>
+              {/* Multi-Step Wizard Toggle — forms only; chatbots are already one question at a time */}
+              {!isChatbot && (
+                <div className="pt-2 flex items-center justify-between p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-indigo-600" />
+                    <div>
+                      <span className="text-xs font-bold text-slate-900 block">Multi-Step Wizard Form</span>
+                      <span className="text-[11px] text-slate-500">Break questions across progressive pages with a progress bar.</span>
+                    </div>
                   </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isMultiStep}
+                      onChange={(e) => setIsMultiStep(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  </label>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={isMultiStep}
-                    onChange={(e) => setIsMultiStep(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                </label>
-              </div>
+              )}
             </div>
 
             {/* Fields List Card */}
@@ -766,7 +743,7 @@ export function FormEditor({ initialForm }: FormEditorProps) {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                   <ListPlus className="w-5 h-5 text-indigo-600" />
-                  Form Questions ({fields.length})
+                  {isChatbot ? `Data the Bot Collects (${fields.length})` : `Form Questions (${fields.length})`}
                 </h3>
 
                 <button
@@ -1142,7 +1119,9 @@ export function FormEditor({ initialForm }: FormEditorProps) {
                 <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
                   <Share2 className="w-4 h-4" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-900">Share & Embed FormAI</h3>
+                <h3 className="text-lg font-bold text-slate-900">
+                  {isChatbot ? "Share & Embed Your Chatbot" : "Share Your Form"}
+                </h3>
               </div>
               <button
                 onClick={() => setShowShareModal(false)}
@@ -1152,12 +1131,13 @@ export function FormEditor({ initialForm }: FormEditorProps) {
               </button>
             </div>
 
-            {/* Option 1: AI Chatbot URL */}
+            {/* Chatbot sharing: standalone chat link + website widget */}
+            {isChatbot && (
             <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
                   <Bot className="w-4 h-4 text-indigo-600" />
-                  1. Standalone AI Chatbot Link
+                  Standalone Chatbot Link
                 </span>
                 <span className="text-[10px] font-bold text-indigo-700 bg-white px-2 py-0.5 rounded-full border border-indigo-200">
                   Recommended
@@ -1180,13 +1160,15 @@ export function FormEditor({ initialForm }: FormEditorProps) {
                 </button>
               </div>
             </div>
+            )}
 
-            {/* Option 2: 1-Line Floating Website Embed */}
+            {/* Chatbot sharing: 1-line floating website widget */}
+            {isChatbot && (
             <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
                   <Code className="w-4 h-4 text-indigo-400" />
-                  2. 1-Line Floating Website Widget Embed
+                  1-Line Floating Website Widget
                 </span>
                 <span className="text-[10px] font-bold text-emerald-400 bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700">
                   Shopify & Webflow
@@ -1209,12 +1191,14 @@ export function FormEditor({ initialForm }: FormEditorProps) {
                 </button>
               </div>
             </div>
+            )}
 
-            {/* Option 3: Classic Form URL */}
+            {/* Form sharing: public web form URL */}
+            {!isChatbot && (
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
               <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                 <Eye className="w-4 h-4 text-slate-600" />
-                3. Classic Web Form URL
+                Public Web Form URL
               </span>
               <div className="flex items-center gap-2">
                 <input
@@ -1233,6 +1217,7 @@ export function FormEditor({ initialForm }: FormEditorProps) {
                 </button>
               </div>
             </div>
+            )}
 
             <div className="pt-2 flex justify-end">
               <button
