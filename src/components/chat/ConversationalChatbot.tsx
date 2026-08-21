@@ -56,15 +56,22 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
   const [conversationId, setConversationId] = useState<string | null>(null);
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
+  const threadRef = useRef<HTMLDivElement>(null);
   const hasInitialized = useRef(false);
 
+  // Scroll the thread container directly after paint — scrollIntoView with
+  // smooth behavior gets interrupted while new content is still rendering,
+  // leaving the latest message clipped at the bottom.
   const scrollToBottom = () => {
-    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    requestAnimationFrame(() => {
+      const el = threadRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    });
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, loading]);
+  }, [messages, loading, isCompleted]);
 
   // Initial greeting
   useEffect(() => {
@@ -268,7 +275,7 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
       </div>
 
       {/* Messages Thread */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-slate-50/50">
+      <div ref={threadRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 bg-slate-50/50">
         {messages.map((msg, msgIdx) => {
           const isBot = msg.role === "assistant";
           // Interactive widgets only stay live on the latest message —
@@ -289,7 +296,7 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
                 </div>
               )}
 
-              <div className="max-w-[85%] sm:max-w-[75%] space-y-2">
+              <div className="max-w-[85%] sm:max-w-[75%] space-y-1">
                 <div
                   className={`p-4 rounded-2xl text-sm leading-relaxed ${
                     isBot
