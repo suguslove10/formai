@@ -26,6 +26,23 @@ export default async function AdminUsersPage() {
     redirect("/dashboard");
   }
 
+  // Auto-sync logged-in Admin/User into PostgreSQL database
+  if (user?.id && adminEmail) {
+    try {
+      await prisma.user.upsert({
+        where: { clerkId: user.id },
+        update: { email: adminEmail },
+        create: {
+          clerkId: user.id,
+          email: adminEmail,
+          plan: "PRO",
+        },
+      });
+    } catch (syncErr) {
+      console.warn("Admin user sync warning:", syncErr);
+    }
+  }
+
   let users: any[] = [];
   try {
     users = await prisma.user.findMany({

@@ -18,6 +18,22 @@ export default async function DashboardPage({
   const activeUserId = user?.id || "demo_user";
   const userEmail = user?.emailAddresses?.[0]?.emailAddress || "demo@formai.app";
 
+  // Auto-sync signed-in Clerk user into PostgreSQL database
+  if (user?.id && userEmail) {
+    try {
+      await prisma.user.upsert({
+        where: { clerkId: user.id },
+        update: { email: userEmail },
+        create: {
+          clerkId: user.id,
+          email: userEmail,
+        },
+      });
+    } catch (syncErr) {
+      console.warn("Dashboard user sync warning:", syncErr);
+    }
+  }
+
   let forms: any[] = [];
   try {
     forms = await prisma.form.findMany({
