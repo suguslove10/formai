@@ -14,16 +14,32 @@ interface ChatbotPageProps {
 export async function generateMetadata({ params }: ChatbotPageProps) {
   const form = await prisma.form.findUnique({
     where: { id: params.id },
-    select: { title: true, description: true },
+    select: { title: true, description: true, botName: true },
   });
 
   if (!form) {
     return { title: "Chatbot Not Found — FormAI" };
   }
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://chatbot.dp.thesugu.com";
+  const title = `${form.botName || form.title} — Interactive AI Chatbot`;
+  const description = form.description || "Chat with our interactive AI assistant on FormAI.";
+
   return {
-    title: `${form.title} — AI Assistant | FormAI`,
-    description: form.description || "Chat with AI to complete this form.",
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `${appUrl}/c/${params.id}`,
+      siteName: "FormAI",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
   };
 }
 

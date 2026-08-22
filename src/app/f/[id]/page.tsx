@@ -21,9 +21,25 @@ export async function generateMetadata({ params }: PublicFormPageProps) {
     return { title: "Form Not Found — FormAI" };
   }
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://chatbot.dp.thesugu.com";
+  const title = `${form.title} | Web Form`;
+  const description = form.description || "Submit your response on FormAI.";
+
   return {
-    title: `${form.title} — FormAI`,
-    description: form.description || "Submit your response on FormAI.",
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `${appUrl}/f/${params.id}`,
+      siteName: "FormAI",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
   };
 }
 
