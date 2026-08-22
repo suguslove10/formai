@@ -56,7 +56,12 @@ export async function POST(req: NextRequest) {
     const planCheck = await checkPlanLimit(effectiveUserId, "create_bot");
     if (!planCheck.allowed) {
       return NextResponse.json(
-        { error: planCheck.reason || "Form creation limit reached for your plan." },
+        {
+          error: planCheck.reason || `You've reached your ${planCheck.limits.name} limit of ${planCheck.limits.maxForms} bot. Contact us on WhatsApp to upgrade and create more.`,
+          code: "PLAN_LIMIT_REACHED",
+          plan: planCheck.plan,
+          limit: planCheck.limits.maxForms,
+        },
         { status: 403 }
       );
     }

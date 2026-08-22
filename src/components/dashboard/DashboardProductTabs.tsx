@@ -107,7 +107,13 @@ export function DashboardProductTabs({
   const responsesUsed = planUsage?.monthlyResponsesUsed ?? 0;
   const isExpired = planUsage?.isExpired || false;
 
-  const isFormLimitReached = formsLimit !== Infinity && formsUsed >= formsLimit;
+  const formsUsageRatio = formsLimit === Infinity ? 0 : formsUsed / formsLimit;
+  const isFormWarning = formsUsageRatio >= 0.8 && formsUsageRatio < 1;
+  const isFormLimitReached = formsUsageRatio >= 1;
+
+  const responsesUsageRatio = responsesLimit === Infinity ? 0 : responsesUsed / responsesLimit;
+  const isResponseWarning = responsesUsageRatio >= 0.8 && responsesUsageRatio < 1;
+  const isResponseLimitReached = responsesUsageRatio >= 1;
 
   return (
     <div className="space-y-8">
@@ -202,18 +208,34 @@ export function DashboardProductTabs({
               <div className="w-full bg-slate-700/50 rounded-full h-2 overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all ${
-                    isFormLimitReached ? "bg-rose-500" : "bg-indigo-400"
+                    isFormLimitReached ? "bg-rose-500" : isFormWarning ? "bg-amber-500" : "bg-indigo-400"
                   }`}
                   style={{
                     width: `${
-                      formsLimit === Infinity ? 10 : Math.min(100, (formsUsed / formsLimit) * 100)
+                      formsLimit === Infinity ? 10 : Math.min(100, Math.max(5, formsUsageRatio * 100))
                     }%`,
                   }}
                 />
               </div>
-              {isFormLimitReached && (
-                <p className="text-[10px] text-rose-300 font-semibold mt-1">Limit reached</p>
-              )}
+              {isFormLimitReached ? (
+                <a
+                  href={UPGRADE_CONTACT.whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-rose-300 font-semibold mt-1 block hover:underline"
+                >
+                  Limit reached — Contact us to upgrade →
+                </a>
+              ) : isFormWarning ? (
+                <a
+                  href={UPGRADE_CONTACT.whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-amber-300 font-semibold mt-1 block hover:underline"
+                >
+                  Getting close to your limit — Contact us to upgrade →
+                </a>
+              ) : null}
             </div>
 
             {/* Monthly Responses Usage */}
@@ -226,15 +248,37 @@ export function DashboardProductTabs({
               </div>
               <div className="w-full bg-slate-700/50 rounded-full h-2 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-emerald-400 transition-all"
+                  className={`h-full rounded-full transition-all ${
+                    isResponseLimitReached ? "bg-rose-500" : isResponseWarning ? "bg-amber-500" : "bg-emerald-400"
+                  }`}
                   style={{
                     width: `${
-                      responsesLimit === Infinity ? 5 : Math.min(100, (responsesUsed / responsesLimit) * 100)
+                      responsesLimit === Infinity ? 5 : Math.min(100, Math.max(5, responsesUsageRatio * 100))
                     }%`,
                   }}
                 />
               </div>
-              <p className="text-[10px] text-slate-400 mt-1">Resets monthly</p>
+              {isResponseLimitReached ? (
+                <a
+                  href={UPGRADE_CONTACT.whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-rose-300 font-semibold mt-1 block hover:underline"
+                >
+                  Limit reached — Contact us to upgrade →
+                </a>
+              ) : isResponseWarning ? (
+                <a
+                  href={UPGRADE_CONTACT.whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-amber-300 font-semibold mt-1 block hover:underline"
+                >
+                  Getting close to your limit — Contact us to upgrade →
+                </a>
+              ) : (
+                <p className="text-[10px] text-slate-400 mt-1">Resets monthly</p>
+              )}
             </div>
           </div>
 

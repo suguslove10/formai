@@ -49,8 +49,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     // Check Plan Response Limits for the Form Owner
     const planCheck = await checkPlanLimit(form.userId, "add_response");
     if (!planCheck.allowed) {
+      console.log(`[PLAN_LIMIT_HIT] formId=${id} ownerId=${form.userId} action=add_response`);
       return NextResponse.json(
-        { error: planCheck.reason || "This form has reached its monthly response limit." },
+        { error: "This business has reached their monthly capacity. Please check back later or contact them directly." },
         { status: 403 }
       );
     }

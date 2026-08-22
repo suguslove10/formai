@@ -263,8 +263,9 @@ Always call the tool 'update_form_progress' with your reply, any newly extracted
         if (result.isComplete) {
           const planCheck = await checkPlanLimit(form.userId, "add_response");
           if (!planCheck.allowed) {
+            console.log(`[PLAN_LIMIT_HIT] formId=${id} ownerId=${form.userId} action=add_response`);
             result.isComplete = false;
-            result.replyMessage = `${result.replyMessage ? result.replyMessage + "\n\n" : ""}Note: This chatbot has reached its monthly response limit for the current billing cycle.`;
+            result.replyMessage = "This business has reached their monthly capacity. Please check back later or contact them directly.";
           } else {
             try {
               // Only store what the model actually assessed — no optimistic
