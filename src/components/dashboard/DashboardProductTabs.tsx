@@ -314,36 +314,42 @@ export function DashboardProductTabs({
         </div>
       </div>
 
-      {/* Main Two-Product Switcher Tabs */}
-      <div className="bg-slate-100 border border-slate-200 p-1.5 rounded-2xl flex items-center max-w-lg">
+      {/* Premium Segmented Switcher Tabs */}
+      <div className="bg-slate-200/80 p-1.5 rounded-2xl flex items-center max-w-md shadow-inner">
         <button
           type="button"
           onClick={() => switchTab("forms")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-extrabold transition-all duration-150 ${
             activeTab === "forms"
-              ? "bg-white text-slate-900 shadow-md"
+              ? "bg-white text-slate-900 shadow-md shadow-slate-200/80"
               : "text-slate-600 hover:text-slate-900"
           }`}
         >
           <FileText className="w-4 h-4 text-slate-700" />
-          <span>Product 1: Classic Forms</span>
-          <span className="text-[10px] px-1.5 py-0.2 bg-slate-100 rounded-full font-mono">{classicForms.length}</span>
+          <span>Classic Forms</span>
+          <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold tabular-nums ${
+            activeTab === "forms" ? "bg-slate-100 text-slate-800" : "bg-slate-300/70 text-slate-700"
+          }`}>
+            {classicForms.length}
+          </span>
         </button>
 
         <button
           type="button"
           onClick={() => switchTab("chatbots")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-extrabold transition-all duration-150 ${
             activeTab === "chatbots"
               ? "bg-indigo-600 text-white shadow-md shadow-indigo-300"
-              : "text-indigo-700 hover:text-indigo-900"
+              : "text-indigo-900 hover:text-indigo-950 font-bold"
           }`}
         >
           <Bot className="w-4 h-4" />
-          <span>Product 2: AI Chatbots</span>
-          <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-            activeTab === "chatbots" ? "bg-indigo-700 text-white" : "bg-indigo-100 text-indigo-700"
-          }`}>{chatbots.length}</span>
+          <span>AI Chatbots</span>
+          <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold tabular-nums ${
+            activeTab === "chatbots" ? "bg-indigo-700 text-white" : "bg-indigo-200/80 text-indigo-900"
+          }`}>
+            {chatbots.length}
+          </span>
         </button>
       </div>
 
