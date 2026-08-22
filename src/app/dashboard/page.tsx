@@ -1,5 +1,6 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
+import { getUserPlanAndUsage } from "@/lib/billing";
 import { DashboardProductTabs } from "@/components/dashboard/DashboardProductTabs";
 
 export default async function DashboardPage({
@@ -32,10 +33,27 @@ export default async function DashboardPage({
     console.warn("Could not query forms from DB:", err);
   }
 
+  let planUsage = null;
+  try {
+    planUsage = await getUserPlanAndUsage(activeUserId);
+  } catch (err) {
+    console.warn("Could not query plan usage:", err);
+  }
+
   return (
     <DashboardProductTabs
       userEmail={userEmail}
       initialTab={searchParams?.view === "chatbots" ? "chatbots" : "forms"}
+      planUsage={planUsage ? {
+        plan: planUsage.plan,
+        effectivePlan: planUsage.effectivePlan,
+        isExpired: planUsage.isExpired,
+        planExpiresAt: planUsage.planExpiresAt ? planUsage.planExpiresAt.toISOString() : null,
+        formsUsed: planUsage.formsUsed,
+        formsLimit: planUsage.formsLimit,
+        monthlyResponsesUsed: planUsage.monthlyResponsesUsed,
+        monthlyResponsesLimit: planUsage.monthlyResponsesLimit,
+      } : undefined}
       forms={forms.map((f) => ({
         id: f.id,
         title: f.title,

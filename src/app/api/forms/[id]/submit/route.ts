@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { FormFieldType } from "@/lib/validations/form";
 import { dispatchFormWebhooks } from "@/lib/webhook-dispatcher";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { checkPlanLimit } from "@/lib/billing";
 import OpenAI from "openai";
 
 interface RouteParams {
@@ -43,6 +44,15 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     if (form.status !== "published") {
       return NextResponse.json({ error: "This form is currently not accepting submissions." }, { status: 403 });
+    }
+
+    // Check Plan Response Limits for the Form Owner
+    const planCheck = await checkPlanLimit(form.userId, "add_response");
+    if (!planCheck.allowed) {
+      return NextResponse.json(
+        { error: planCheck.reason || "This form has reached its monthly response limit." },
+        { status: 403 }
+      );
     }
 
     const fields = (form.fieldsJson as unknown as FormFieldType[]) || [];
