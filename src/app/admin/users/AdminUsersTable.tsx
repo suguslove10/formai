@@ -115,6 +115,61 @@ export function AdminUsersTable({ users, adminEmail }: AdminUsersTableProps) {
     }
   };
 
+  // Add User state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [newPlan, setNewPlan] = useState<"FREE" | "PRO" | "AGENCY">("PRO");
+  const [newExpiry, setNewExpiry] = useState("");
+  const [newNotes, setNewNotes] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+
+  const openAddModal = () => {
+    setNewEmail("");
+    setNewPlan("PRO");
+    setNewExpiry("");
+    setNewNotes("");
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    setShowAddModal(true);
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newEmail.trim()) return;
+
+    setIsCreating(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      const res = await fetch("/api/admin/users/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: newEmail.trim(),
+          plan: newPlan,
+          planExpiresAt: newExpiry ? new Date(newExpiry).toISOString() : null,
+          planNotes: newNotes,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to create/assign plan to user");
+      }
+
+      setSuccessMsg(`Successfully created/assigned ${newPlan} plan to ${newEmail}`);
+      setTimeout(() => {
+        setShowAddModal(false);
+        router.refresh();
+      }, 1200);
+    } catch (err: any) {
+      setErrorMsg(err.message || "An unexpected error occurred.");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -138,9 +193,17 @@ export function AdminUsersTable({ users, adminEmail }: AdminUsersTableProps) {
               placeholder="Search by email, clerkId, notes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64"
+              className="pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-56 sm:w-64"
             />
           </div>
+
+          <button
+            type="button"
+            onClick={openAddModal}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold rounded-xl shadow-md transition flex items-center gap-1.5 flex-shrink-0"
+          >
+            + Add / Assign User
+          </button>
         </div>
       </div>
 
@@ -378,6 +441,128 @@ export function AdminUsersTable({ users, adminEmail }: AdminUsersTableProps) {
                   className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-200 transition disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {isSaving ? "Saving..." : "Save Plan Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add New User Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+              <div>
+                <h3 className="text-lg font-extrabold text-slate-900">Add / Assign Plan to User</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Create a user record & assign a paid plan directly</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateUser} className="space-y-5">
+              {errorMsg && (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-medium">
+                  {errorMsg}
+                </div>
+              )}
+              {successMsg && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-xl font-medium">
+                  {successMsg}
+                </div>
+              )}
+
+              {/* User Email */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1.5">
+                  User Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. customer@example.com"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              {/* Plan Selection */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">
+                  Select Plan Tier
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { id: "FREE", label: "🌱 FREE", desc: "1 bot, 50 responses" },
+                    { id: "PRO", label: "⚡ PRO", desc: "5 bots, unlimited" },
+                    { id: "AGENCY", label: "🚀 AGENCY", desc: "Unlimited everything" },
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setNewPlan(p.id as any)}
+                      className={`p-3 rounded-2xl border text-left transition ${
+                        newPlan === p.id
+                          ? "border-indigo-600 bg-indigo-50/70 text-indigo-950 ring-2 ring-indigo-500/20"
+                          : "border-slate-200 hover:border-slate-300 text-slate-700"
+                      }`}
+                    >
+                      <p className="font-extrabold text-xs">{p.label}</p>
+                      <p className="text-[10px] text-slate-500 mt-1">{p.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Expiry Date */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1.5">
+                  Plan Expiry Date (Optional)
+                </label>
+                <input
+                  type="date"
+                  value={newExpiry}
+                  onChange={(e) => setNewExpiry(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              {/* Notes / UTR / Reference */}
+              <div>
+                <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1.5">
+                  Payment Reference / UTR Notes
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. UTR: 987654321012 | Paid via GPay / Bank Transfer"
+                  value={newNotes}
+                  onChange={(e) => setNewNotes(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                />
+              </div>
+
+              {/* Form Buttons */}
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreating || !newEmail.trim()}
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-200 transition disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {isCreating ? "Assigning..." : "Assign Plan"}
                 </button>
               </div>
             </form>
