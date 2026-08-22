@@ -74,11 +74,18 @@ export interface PlanCheckResult {
  */
 export async function checkPlanLimit(
   userId: string,
-  action: "create_bot" | "add_response"
+  action: "create_bot" | "add_response",
+  userEmail?: string
 ): Promise<PlanCheckResult> {
   try {
-    const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { clerkId: userId },
+          ...(userEmail ? [{ email: userEmail.toLowerCase() }] : []),
+          ...(userId.includes("@") ? [{ email: userId.toLowerCase() }] : []),
+        ],
+      },
     });
 
     const currentPlan: PlanType = user ? getUserEffectivePlan(user) : "FREE";
@@ -88,7 +95,7 @@ export async function checkPlanLimit(
       if (limits.maxForms !== Infinity) {
         // Counts existing live forms in DB owned by this user
         const existingCount = await prisma.form.count({
-          where: { userId },
+          where: { userId: user?.clerkId || userId },
         });
 
         if (existingCount >= limits.maxForms) {
@@ -109,7 +116,7 @@ export async function checkPlanLimit(
 
         const monthlyResponseCount = await prisma.response.count({
           where: {
-            form: { userId },
+            form: { userId: user?.clerkId || userId },
             createdAt: { gte: startOfMonth },
           },
         });
@@ -158,9 +165,15 @@ export interface UserPlanUsage {
 /**
  * Returns comprehensive plan and usage metadata for dashboard rendering.
  */
-export async function getUserPlanAndUsage(userId: string): Promise<UserPlanUsage> {
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
+export async function getUserPlanAndUsage(userId: string, userEmail?: string): Promise<UserPlanUsage> {
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { clerkId: userId },
+        ...(userEmail ? [{ email: userEmail.toLowerCase() }] : []),
+        ...(userId.includes("@") ? [{ email: userId.toLowerCase() }] : []),
+      ],
+    },
   });
 
   const rawPlan: PlanType = user?.plan || "FREE";

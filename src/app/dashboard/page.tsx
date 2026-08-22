@@ -21,14 +21,34 @@ export default async function DashboardPage({
   // Auto-sync signed-in Clerk user into PostgreSQL database
   if (user?.id && userEmail) {
     try {
-      await prisma.user.upsert({
-        where: { clerkId: user.id },
-        update: { email: userEmail },
-        create: {
-          clerkId: user.id,
-          email: userEmail,
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { clerkId: user.id },
+            { email: userEmail.toLowerCase() },
+          ],
         },
       });
+
+      if (existingUser) {
+        if (existingUser.clerkId !== user.id || existingUser.email !== userEmail.toLowerCase()) {
+          await prisma.user.update({
+            where: { id: existingUser.id },
+            data: {
+              clerkId: user.id,
+              email: userEmail.toLowerCase(),
+            },
+          });
+        }
+      } else {
+        await prisma.user.create({
+          data: {
+            clerkId: user.id,
+            email: userEmail.toLowerCase(),
+            plan: "FREE",
+          },
+        });
+      }
     } catch (syncErr) {
       console.warn("Dashboard user sync warning:", syncErr);
     }
@@ -51,7 +71,7 @@ export default async function DashboardPage({
 
   let planUsage = null;
   try {
-    planUsage = await getUserPlanAndUsage(activeUserId);
+    planUsage = await getUserPlanAndUsage(activeUserId, userEmail);
   } catch (err) {
     console.warn("Could not query plan usage:", err);
   }
