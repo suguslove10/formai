@@ -79,23 +79,22 @@ export default async function DashboardLayout({
           </div>
 
           {/* Right Info & Profile */}
-            <div className="flex items-center gap-3">
-              <div className="text-right hidden sm:block">
-                <p className="text-xs font-bold text-slate-900 leading-none">
-                  {user?.firstName ? `${user.firstName} ${user?.lastName || ""}` : "Creator Account"}
-                </p>
-                <p className="text-[11px] text-slate-500 mt-1 leading-none">
-                  {effectiveEmail}
-                </p>
-              </div>
-              {user?.id ? (
-                <UserButton afterSignOutUrl="/" />
-              ) : (
-                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-600 to-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-sm">
-                  {effectiveEmail.charAt(0).toUpperCase()}
-                </div>
-              )}
+          <div className="flex items-center gap-3">
+            <div className="text-right hidden sm:block">
+              <p className="text-xs font-bold text-slate-900 leading-none">
+                {user?.firstName ? `${user.firstName} ${user?.lastName || ""}` : "Creator Account"}
+              </p>
+              <p className="text-[11px] text-slate-500 mt-1 leading-none">
+                {effectiveEmail}
+              </p>
             </div>
+            {user?.id ? (
+              <UserButton afterSignOutUrl="/" />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-600 to-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-sm">
+                {effectiveEmail.charAt(0).toUpperCase()}
+              </div>
+            )}
           </div>
         </div>
       </header>
