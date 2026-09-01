@@ -14,10 +14,78 @@ const FETCH_TIMEOUT_MS = 15_000;
 const MAX_EXTRACT_CHARS = 8_000; // keep the KB prompt-sized
 const MAX_KB_CHARS = 24_000;
 
-// Very small HTML → text extractor: drop non-content tags, strip markup,
-// collapse whitespace. Good enough for FAQ/marketing pages.
-function htmlToText(html: string): string {
-  return html
+// Multi-strategy HTML text extractor: parses metadata, schema.org JSON-LD,
+// Next.js/React hydration data, and rendered DOM elements.
+function extractWebsiteContent(html: string): string {
+  const chunks: string[] = [];
+
+  // 1. Page Title
+  const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+  if (titleMatch && titleMatch[1]) {
+    chunks.push(`Title: ${titleMatch[1].trim()}`);
+  }
+
+  // 2. Meta Descriptions and OpenGraph Details
+  const metaDescMatch =
+    html.match(/<meta[^>]+(?:name|property)=["'](?:description|og:description)["'][^>]+content=["']([^"']+)["']/i) ||
+    html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:name|property)=["'](?:description|og:description)["']/i);
+  if (metaDescMatch && metaDescMatch[1]) {
+    chunks.push(`Description: ${metaDescMatch[1].trim()}`);
+  }
+
+  // 3. JSON-LD Structured Data (Schema.org business info, menu, FAQs)
+  const jsonLdMatches = html.match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi) || [];
+  for (const ld of jsonLdMatches) {
+    const rawJson = ld.replace(/<script[^>]*>/i, "").replace(/<\/script>/i, "").trim();
+    try {
+      const parsed = JSON.parse(rawJson);
+      const stringified = JSON.stringify(parsed, null, 2)
+        .replace(/[{}[\]",]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (stringified.length > 20) {
+        chunks.push(`Business Info / Structured Data:\n${stringified}`);
+      }
+    } catch (e) {}
+  }
+
+  // 4. Next.js App Router / Pages Router SSR payloads
+  const nextDataMatches = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/i);
+  if (nextDataMatches && nextDataMatches[1]) {
+    try {
+      const parsed = JSON.parse(nextDataMatches[1]);
+      const jsonText = JSON.stringify(parsed.props?.pageProps || parsed)
+        .replace(/[{}[\]",]/g, " ")
+        .replace(/\b(pageProps|__N_SSP|__N_SSG|initialState|style|className)\b/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (jsonText.length > 40) {
+        chunks.push(jsonText);
+      }
+    } catch (e) {}
+  }
+
+  const rscMatches = html.match(/self\.__next_f\.push\(\[1,"([\s\S]*?)"\]\)/g) || [];
+  if (rscMatches.length > 0) {
+    let rscText = "";
+    for (const match of rscMatches) {
+      const content = match.replace(/^self\.__next_f\.push\(\[1,"/, "").replace(/"\]\)$/, "");
+      const unescaped = content
+        .replace(/\\"/g, '"')
+        .replace(/\\n/g, "\n")
+        .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+      
+      const sentences = unescaped.match(/[A-Z0-9][A-Za-z0-9\s,.'’\-–—:;!?&()]{8,}/g) || [];
+      rscText += " " + sentences.join(" ");
+    }
+    const cleanedRsc = rscText.replace(/\s+/g, " ").trim();
+    if (cleanedRsc.length > 40) {
+      chunks.push(cleanedRsc);
+    }
+  }
+
+  // 5. Standard Visible HTML Body Content
+  const bodyText = html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
@@ -35,6 +103,12 @@ function htmlToText(html: string): string {
     .replace(/\s*\n\s*/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+
+  if (bodyText.length > 0) {
+    chunks.push(bodyText);
+  }
+
+  return chunks.join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 // POST /api/forms/[id]/train — fetch a public web page and append its text
@@ -89,8 +163,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     try {
       const res = await fetch(normalizedUrl, {
         headers: {
-          "User-Agent": "FormAI-KnowledgeImporter/1.0 (+https://formai.app)",
-          Accept: "text/html,application/xhtml+xml",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 (FormAI/1.0)",
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
         },
         redirect: "follow",
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
@@ -116,8 +191,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const text = htmlToText(html).slice(0, MAX_EXTRACT_CHARS);
-    if (text.length < 100) {
+    const text = extractWebsiteContent(html).slice(0, MAX_EXTRACT_CHARS);
+    if (text.length < 25) {
       return NextResponse.json(
         { error: "No readable text found on that page. Try a content page like /faq or /pricing." },
         { status: 422 }
