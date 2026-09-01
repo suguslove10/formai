@@ -21,6 +21,15 @@ const BROWSER_HEADERS = {
   "Accept-Language": "en-US,en;q=0.9",
 };
 
+// Sanitizes strings for PostgreSQL by stripping null bytes (0x00) and invalid control chars
+function sanitizeForPostgres(str: string): string {
+  if (!str) return "";
+  return str
+    .replace(/\0/g, "")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, " ")
+    .replace(/\uFFFD/g, "");
+}
+
 // Multi-strategy HTML text extractor: parses metadata, schema.org JSON-LD,
 // Next.js/React hydration data, and rendered DOM elements.
 function extractWebsiteContent(html: string): string {
@@ -80,7 +89,11 @@ function extractWebsiteContent(html: string): string {
       const unescaped = content
         .replace(/\\"/g, '"')
         .replace(/\\n/g, "\n")
-        .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+        .replace(/\\u0000/g, "")
+        .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => {
+          const code = parseInt(hex, 16);
+          return code === 0 ? "" : String.fromCharCode(code);
+        });
       
       const sentences = unescaped.match(/[A-Z0-9][A-Za-z0-9\s,.'’\-–—:;!?&()]{8,}/g) || [];
       rscText += " " + sentences.join(" ");
@@ -115,7 +128,7 @@ function extractWebsiteContent(html: string): string {
     chunks.push(bodyText);
   }
 
-  return chunks.join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
+  return sanitizeForPostgres(chunks.join("\n\n").replace(/\n{3,}/g, "\n\n").trim());
 }
 
 // Discovers canonical sub-pages via sitemap.xml and internal anchor links
@@ -273,7 +286,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       combinedImportBlock += `\n---\n#### 📄 Page: ${page.url}\n${page.content}\n`;
     }
 
-    const updatedKb = ((form.knowledgeBase || "") + combinedImportBlock).slice(-MAX_TOTAL_KB_CHARS);
+    const updatedKb = sanitizeForPostgres(
+      ((form.knowledgeBase || "") + combinedImportBlock).slice(-MAX_TOTAL_KB_CHARS)
+    );
 
     await prisma.form.update({
       where: { id },
