@@ -49,47 +49,55 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-white text-slate-900 flex flex-col overflow-x-hidden">
-      {/* ── Navigation ─────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 border-b border-slate-200/60 bg-white/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white flex items-center justify-center font-bold text-lg shadow-lg shadow-indigo-500/25">
+      {/* ── Modern Floating Navigation Bar ──────────────────────────── */}
+      <header className="sticky top-0 z-50 px-4 sm:px-6 pt-3 pb-2 transition-all">
+        <div className="max-w-6xl mx-auto bg-white/90 backdrop-blur-xl border border-slate-200/80 rounded-2xl px-4 sm:px-5 h-15 flex items-center justify-between shadow-sm shadow-slate-200/40">
+          {/* Logo & Product Tag */}
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-8.5 h-8.5 rounded-xl bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-600 text-white flex items-center justify-center font-black text-base shadow-md shadow-indigo-500/25 group-hover:scale-105 transition-transform">
               F
             </div>
-            <span className="font-extrabold text-xl tracking-tight text-slate-900">FormAI</span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-extrabold text-lg tracking-tight text-slate-900">FormAI</span>
+              <span className="hidden sm:inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100">
+                v2.0
+              </span>
+            </div>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1 text-sm font-medium text-slate-600">
-            <a href="#problem" className="px-3 py-2 rounded-lg hover:text-slate-900 hover:bg-slate-50 transition">
+          {/* Centered Navigation Links */}
+          <nav className="hidden md:flex items-center gap-1 text-[13px] font-semibold text-slate-600 bg-slate-100/60 p-1 rounded-full border border-slate-200/50">
+            <a href="#problem" className="px-3.5 py-1.5 rounded-full hover:text-slate-900 hover:bg-white hover:shadow-2xs transition-all">
               Why AI Chat
             </a>
-            <a href="#how" className="px-3 py-2 rounded-lg hover:text-slate-900 hover:bg-slate-50 transition">
+            <a href="#how" className="px-3.5 py-1.5 rounded-full hover:text-slate-900 hover:bg-white hover:shadow-2xs transition-all">
               How it works
             </a>
-            <a href="#features" className="px-3 py-2 rounded-lg hover:text-slate-900 hover:bg-slate-50 transition">
+            <a href="#features" className="px-3.5 py-1.5 rounded-full hover:text-slate-900 hover:bg-white hover:shadow-2xs transition-all">
               Features
             </a>
-            <a href="#pricing" className="px-3 py-2 rounded-lg hover:text-slate-900 hover:bg-slate-50 transition">
+            <a href="#pricing" className="px-3.5 py-1.5 rounded-full hover:text-slate-900 hover:bg-white hover:shadow-2xs transition-all">
               Pricing
             </a>
-            <a href="#testimonials" className="px-3 py-2 rounded-lg hover:text-slate-900 hover:bg-slate-50 transition">
+            <a href="#testimonials" className="px-3.5 py-1.5 rounded-full hover:text-slate-900 hover:bg-white hover:shadow-2xs transition-all">
               Success Stories
             </a>
           </nav>
 
-          <div className="flex items-center gap-3">
+          {/* Right Action Buttons */}
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/sign-in"
-              className="hidden sm:inline-flex px-4 py-2 text-sm font-semibold text-slate-700 rounded-xl hover:bg-slate-100 transition"
+              className="px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-slate-700 hover:text-slate-950 rounded-xl hover:bg-slate-100/80 transition"
             >
               Sign in
             </Link>
             <Link
               href="/sign-up"
-              className="inline-flex items-center gap-1.5 px-4.5 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-md shadow-indigo-200"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 rounded-xl transition-all shadow-sm hover:shadow-md hover:shadow-indigo-500/20 active:scale-[0.98]"
             >
-              Start free
-              <ArrowRight className="w-4 h-4" />
+              <span>Start free</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
