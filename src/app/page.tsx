@@ -149,48 +149,160 @@ export default async function HomePage() {
           </p>
 
           {/* Hero Visual Showcase Preview */}
-          <div className="mt-14 max-w-5xl mx-auto rounded-3xl bg-slate-900 p-3 sm:p-4 shadow-2xl border border-slate-800">
-            <div className="bg-slate-950 rounded-2xl p-4 sm:p-6 text-left border border-slate-800/80 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="mt-14 max-w-5xl mx-auto rounded-3xl bg-slate-900/95 p-3 sm:p-5 shadow-2xl border border-slate-800 relative overflow-hidden">
+            {/* Ambient background glow behind mockup */}
+            <div className="absolute -top-24 -left-24 w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-violet-500/20 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="bg-slate-950/90 rounded-2xl p-4 sm:p-6 text-left border border-slate-800/90 relative z-10">
+              {/* Mockup Top Browser Bar */}
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 mb-5">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-rose-500" />
-                  <div className="w-3 h-3 rounded-full bg-amber-500" />
-                  <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                  <span className="ml-2 text-xs font-mono text-slate-400">your-website.com</span>
+                  <div className="w-3 h-3 rounded-full bg-rose-500/90" />
+                  <div className="w-3 h-3 rounded-full bg-amber-500/90" />
+                  <div className="w-3 h-3 rounded-full bg-emerald-500/90" />
+                  <span className="ml-2 text-xs font-mono text-slate-400 bg-slate-900 px-2.5 py-0.5 rounded-md border border-slate-800">
+                    https://smilecaredental.com
+                  </span>
                 </div>
-                <span className="text-xs font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-800 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  FormAI Widget Active
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/90 border border-emerald-800/80 px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    FormAI Agent Active (24/7)
+                  </span>
+                </div>
               </div>
 
-              {/* Mock Chat Conversation */}
-              <div className="space-y-3 max-w-2xl text-xs sm:text-sm font-sans pt-2">
-                <div className="flex gap-3 items-start">
-                  <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
-                    🤖
+              {/* Dual-Column Showcase: Interactive AI Chatbot (Left) + Real-time Lead Extraction (Right) */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+                {/* Left Column: Live Chatbot Interface */}
+                <div className="lg:col-span-7 bg-slate-900/90 rounded-2xl p-4 sm:p-5 border border-slate-800/80 flex flex-col justify-between space-y-4">
+                  {/* Chat Header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center font-bold text-sm shadow-md shadow-indigo-500/30">
+                        🤖
+                      </div>
+                      <div>
+                        <div className="font-bold text-slate-100 text-xs sm:text-sm flex items-center gap-1.5">
+                          SmileCare Assistant
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        </div>
+                        <p className="text-[10px] text-slate-400">Grounding on Clinic Knowledge Base</p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-indigo-300 bg-indigo-950/80 border border-indigo-800/60 px-2 py-0.5 rounded-md">
+                      Instant Reply
+                    </span>
                   </div>
-                  <div className="bg-slate-800 text-slate-100 p-3 rounded-2xl rounded-tl-none border border-slate-700/80">
-                    Hello! Welcome to DentalCare Clinic. Are you looking to book an appointment or check our teeth whitening packages?
-                  </div>
-                </div>
 
-                <div className="flex gap-3 items-start justify-end">
-                  <div className="bg-indigo-600 text-white p-3 rounded-2xl rounded-tr-none">
-                    Hi! I need a consultation this Friday and want to know if you accept insurance?
-                  </div>
-                </div>
+                  {/* Messages Flow */}
+                  <div className="space-y-3 text-xs sm:text-sm font-sans flex-1">
+                    {/* Bot Message 1 */}
+                    <div className="flex gap-2.5 items-start">
+                      <div className="w-7 h-7 rounded-lg bg-indigo-600/30 border border-indigo-500/30 text-white flex items-center justify-center text-xs flex-shrink-0">
+                        🤖
+                      </div>
+                      <div className="bg-slate-800 text-slate-100 p-3 rounded-2xl rounded-tl-none border border-slate-700/60 max-w-[88%] leading-relaxed shadow-sm">
+                        Hello! Welcome to SmileCare Dental. Are you looking to book an appointment or check our teeth whitening packages?
+                      </div>
+                    </div>
 
-                <div className="flex gap-3 items-start">
-                  <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
-                    🤖
+                    {/* User Message */}
+                    <div className="flex gap-2.5 items-start justify-end">
+                      <div className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white p-3 rounded-2xl rounded-tr-none max-w-[85%] leading-relaxed shadow-sm shadow-indigo-600/20">
+                        Hi! I'd like a whitening consultation this Friday afternoon. Do you accept Delta Dental insurance?
+                      </div>
+                    </div>
+
+                    {/* Bot Message 2 */}
+                    <div className="flex gap-2.5 items-start">
+                      <div className="w-7 h-7 rounded-lg bg-indigo-600/30 border border-indigo-500/30 text-white flex items-center justify-center text-xs flex-shrink-0">
+                        🤖
+                      </div>
+                      <div className="bg-slate-800 text-slate-100 p-3 rounded-2xl rounded-tl-none border border-slate-700/60 max-w-[88%] leading-relaxed space-y-2 shadow-sm">
+                        <p>Yes! We are an in-network provider for Delta Dental. I can reserve your Friday 3:30 PM consultation right now.</p>
+                        <p className="text-slate-300 text-[11px]">Could I grab your full name and phone number to lock in the appointment?</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="bg-slate-800 text-slate-100 p-3 rounded-2xl rounded-tl-none border border-slate-700/80 space-y-2">
-                    <p>Yes! We accept major insurance providers. I can lock in your Friday appointment right now. What's your name and phone number?</p>
-                    <div className="pt-1 flex items-center gap-2">
-                      <span className="px-2 py-1 bg-emerald-900/60 border border-emerald-700/80 text-emerald-300 text-[11px] rounded-lg font-mono">
-                        🔥 High Lead Priority Detected
+
+                  {/* Quick Action Suggestion Pills & Input Bar */}
+                  <div className="pt-2 space-y-2 border-t border-slate-800/80">
+                    <div className="flex flex-wrap gap-1.5">
+                      <span className="text-[10px] font-medium bg-slate-800/90 text-slate-300 hover:text-white px-2.5 py-1 rounded-lg border border-slate-700/70 transition cursor-pointer">
+                        🦷 Book Cleaning ($99)
                       </span>
+                      <span className="text-[10px] font-medium bg-slate-800/90 text-slate-300 hover:text-white px-2.5 py-1 rounded-lg border border-slate-700/70 transition cursor-pointer">
+                        📋 Insurance List
+                      </span>
+                      <span className="text-[10px] font-medium bg-slate-800/90 text-slate-300 hover:text-white px-2.5 py-1 rounded-lg border border-slate-700/70 transition cursor-pointer">
+                        📍 Clinic Directions
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-slate-950 px-3 py-2 rounded-xl border border-slate-800">
+                      <span className="text-slate-500 text-xs flex-1">Type your response or question...</span>
+                      <div className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs">
+                        ↑
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Real-time Lead Intelligence & CRM Sync */}
+                <div className="lg:col-span-5 bg-slate-900/70 rounded-2xl p-4 sm:p-5 border border-slate-800/80 flex flex-col justify-between space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-indigo-400" />
+                        <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                          Live Lead Intelligence
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-800 px-2 py-0.5 rounded-md">
+                        🔥 98/100 Intent
+                      </span>
+                    </div>
+
+                    {/* Extracted Customer Fields */}
+                    <div className="mt-3.5 space-y-2.5">
+                      <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800/80 flex items-center justify-between text-xs">
+                        <span className="text-slate-400">Target Service</span>
+                        <span className="font-semibold text-slate-200">Teeth Whitening</span>
+                      </div>
+                      <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800/80 flex items-center justify-between text-xs">
+                        <span className="text-slate-400">Insurance Provider</span>
+                        <span className="font-semibold text-indigo-300">Delta Dental (In-Network)</span>
+                      </div>
+                      <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800/80 flex items-center justify-between text-xs">
+                        <span className="text-slate-400">Requested Slot</span>
+                        <span className="font-semibold text-slate-200">Friday @ 3:30 PM</span>
+                      </div>
+                      <div className="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800/80 flex items-center justify-between text-xs">
+                        <span className="text-slate-400">Visitor Location</span>
+                        <span className="font-semibold text-slate-200">Austin, Texas</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Integrations & Automations Dispatch Status */}
+                  <div className="space-y-2 pt-3 border-t border-slate-800">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                      Instant Automated Actions
+                    </span>
+                    <div className="space-y-1.5 text-[11px]">
+                      <div className="flex items-center gap-2 text-emerald-400">
+                        <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>Appointment drafted in Google Calendar</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-emerald-400">
+                        <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>Lead notification sent to WhatsApp & Email</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-indigo-300">
+                        <Webhook className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>Webhook synced to CRM in 340ms</span>
+                      </div>
                     </div>
                   </div>
                 </div>
