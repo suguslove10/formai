@@ -27,10 +27,20 @@ enum MemberRole {
   VIEWER
 }
 
+enum PlanType {
+  FREE
+  PRO
+  AGENCY
+}
+
 model User {
   id               String            @id @default(cuid())
   clerkId          String            @unique
   email            String            @unique
+  plan             PlanType          @default(FREE)
+  planActivatedAt  DateTime?
+  planExpiresAt    DateTime?
+  planNotes        String?
   createdAt        DateTime          @default(now())
   forms            Form[]
   workspaceMembers WorkspaceMember[]

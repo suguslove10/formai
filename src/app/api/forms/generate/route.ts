@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { generateFormFromPrompt } from "@/lib/ai/generate-form";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { checkPlanLimit } from "@/lib/billing";
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
     const userPrompt = body.prompt.trim();
     const productType: "form" | "chatbot" = body.productType === "chatbot" ? "chatbot" : "form";
 
-    // Ensure User record exists in Postgres before saving form
+    // Ensure User record exists in Postgres before checking plan limits
     try {
       await prisma.user.upsert({
         where: { clerkId: effectiveUserId },
@@ -49,6 +50,20 @@ export async function POST(req: NextRequest) {
       });
     } catch (userSyncErr) {
       console.warn("User upsert warning:", userSyncErr);
+    }
+
+    // Check Plan Limits (bot / form count)
+    const planCheck = await checkPlanLimit(effectiveUserId, "create_bot");
+    if (!planCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: planCheck.reason || `You've reached your ${planCheck.limits.name} limit of ${planCheck.limits.maxForms} bot. Contact us on WhatsApp to upgrade and create more.`,
+          code: "PLAN_LIMIT_REACHED",
+          plan: planCheck.plan,
+          limit: planCheck.limits.maxForms,
+        },
+        { status: 403 }
+      );
     }
 
     // Call Anthropic Claude with tool use & 1-retry fallback

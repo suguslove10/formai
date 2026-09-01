@@ -59,5 +59,5 @@ USER nextjs
 
 EXPOSE 3000
 
-# Apply pending migrations, then start the server
-CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy && node server.js"]
+# Apply database schema sync (db push), then start the server
+CMD ["sh", "-c", "node node_modules/prisma/build/index.js db push --accept-data-loss && node server.js"]

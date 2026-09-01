@@ -5,6 +5,7 @@ import OpenAI from "openai";
 import { FormFieldType } from "@/lib/validations/form";
 import { dispatchFormWebhooks } from "@/lib/webhook-dispatcher";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { checkPlanLimit } from "@/lib/billing";
 
 // Bounds that keep a public, LLM-backed endpoint from being abused
 const MAX_CONVERSATION_MESSAGES = 80; // hard cap per conversation
@@ -260,34 +261,41 @@ Always call the tool 'update_form_progress' with your reply, any newly extracted
         let responseId: string | null = null;
         // If complete, persist response with AI Sentiment, Lead Score & Summary in PostgreSQL
         if (result.isComplete) {
-          try {
-            // Only store what the model actually assessed — no optimistic
-            // defaults that would misreport analytics or misfire webhooks
-            const savedResponse = await prisma.response.create({
-              data: {
+          const planCheck = await checkPlanLimit(form.userId, "add_response");
+          if (!planCheck.allowed) {
+            console.log(`[PLAN_LIMIT_HIT] formId=${id} ownerId=${form.userId} action=add_response`);
+            result.isComplete = false;
+            result.replyMessage = "This business has reached their monthly capacity. Please check back later or contact them directly.";
+          } else {
+            try {
+              // Only store what the model actually assessed — no optimistic
+              // defaults that would misreport analytics or misfire webhooks
+              const savedResponse = await prisma.response.create({
+                data: {
+                  formId: id,
+                  dataJson: updatedData,
+                  sentiment: result.sentiment || null,
+                  leadScore: result.leadScore || null,
+                  aiSummary: result.aiSummary || null,
+                },
+              });
+              responseId = savedResponse.id;
+
+              // Trigger Enterprise outbound webhooks
+              dispatchFormWebhooks({
+                event: result.leadScore === "high" ? "lead.high" : result.sentiment === "negative" ? "sentiment.negative" : "response.created",
                 formId: id,
-                dataJson: updatedData,
+                formTitle: form.title,
+                responseId: savedResponse.id,
+                data: updatedData,
                 sentiment: result.sentiment || null,
                 leadScore: result.leadScore || null,
                 aiSummary: result.aiSummary || null,
-              },
-            });
-            responseId = savedResponse.id;
-
-            // Trigger Enterprise outbound webhooks
-            dispatchFormWebhooks({
-              event: result.leadScore === "high" ? "lead.high" : result.sentiment === "negative" ? "sentiment.negative" : "response.created",
-              formId: id,
-              formTitle: form.title,
-              responseId: savedResponse.id,
-              data: updatedData,
-              sentiment: result.sentiment || null,
-              leadScore: result.leadScore || null,
-              aiSummary: result.aiSummary || null,
-              submittedAt: new Date().toISOString(),
-            }).catch((e) => console.error("Chatbot webhook error:", e));
-          } catch (dbErr) {
-            console.error("Error saving chatbot response:", dbErr);
+                submittedAt: new Date().toISOString(),
+              }).catch((e) => console.error("Chatbot webhook error:", e));
+            } catch (dbErr) {
+              console.error("Error saving chatbot response:", dbErr);
+            }
           }
         }
 

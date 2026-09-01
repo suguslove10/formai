@@ -14,467 +14,722 @@ import {
   Webhook,
   BookOpen,
   Send,
-  Layers,
-  Cpu,
-  MousePointerClick,
+  MessageCircle,
+  Mail,
+  Building2,
+  Stethoscope,
+  Briefcase,
+  Users,
+  CheckCircle2,
+  XCircle,
+  HelpCircle,
   Sparkle,
 } from "lucide-react";
+import { prisma } from "@/lib/prisma";
+import { UPGRADE_CONTACT, PLAN_LIMITS } from "@/lib/billing";
 
-export default function HomePage() {
-  const samplePrompts = [
-    { label: "SaaS Feedback Survey", icon: "⭐", type: "Classic Form", prompt: "A 4-question customer satisfaction survey with rating and suggestions" },
-    { label: "Lead Capture Chatbot", icon: "💼", type: "AI Agent", prompt: "A high-converting B2B lead qualification bot that asks budget and email" },
-    { label: "Event RSVP & Dietary", icon: "🎟️", type: "Classic Form", prompt: "Conference registration form with ticket type, meal preference and company" },
-    { label: "Support & FAQ Bot", icon: "🤖", type: "AI Agent", prompt: "An interactive support assistant that answers FAQs and logs unresolved tickets" },
-  ];
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  // Check if there is a published demo chatbot to link to
+  let demoBotId: string | null = null;
+  try {
+    const demoBot = await prisma.form.findFirst({
+      where: { status: "published", type: "chatbot" },
+      select: { id: true },
+    });
+    if (demoBot) {
+      demoBotId = demoBot.id;
+    }
+  } catch (e) {}
+
+  const demoLink = demoBotId ? `/c/${demoBotId}` : "/sign-up";
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 flex flex-col overflow-x-hidden selection:bg-indigo-500 selection:text-white">
-      {/* ── Ambient Background Glows ────────────────────────────── */}
-      <div className="fixed top-[-10%] left-[20%] w-[550px] h-[550px] glow-blob glow-indigo -z-10" />
-      <div className="fixed top-[15%] right-[-5%] w-[500px] h-[500px] glow-blob glow-violet -z-10" />
-      <div className="fixed top-[45%] left-[-10%] w-[450px] h-[450px] glow-blob glow-pink -z-10" />
-
+    <div className="min-h-screen bg-white text-slate-900 flex flex-col overflow-x-hidden">
       {/* ── Navigation ─────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 border-b border-slate-200/60 bg-white/75 backdrop-blur-xl transition-all">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-600 text-white flex items-center justify-center font-bold text-lg shadow-lg shadow-indigo-500/30 group-hover:scale-105 transition-transform">
+      <header className="sticky top-0 z-50 border-b border-slate-200/60 bg-white/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white flex items-center justify-center font-bold text-lg shadow-lg shadow-indigo-500/25">
               F
             </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent">
-                FormAI
-              </span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200/60">
-                v2.0
-              </span>
-            </div>
+            <span className="font-extrabold text-xl tracking-tight text-slate-900">FormAI</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-1 text-sm font-medium text-slate-600">
-            <a href="#products" className="px-3.5 py-2 rounded-lg hover:text-slate-900 hover:bg-slate-100/60 transition">
-              Products
+            <a href="#problem" className="px-3 py-2 rounded-lg hover:text-slate-900 hover:bg-slate-50 transition">
+              Why AI Chat
             </a>
-            <a href="#features" className="px-3.5 py-2 rounded-lg hover:text-slate-900 hover:bg-slate-100/60 transition">
+            <a href="#how" className="px-3 py-2 rounded-lg hover:text-slate-900 hover:bg-slate-50 transition">
+              How it works
+            </a>
+            <a href="#features" className="px-3 py-2 rounded-lg hover:text-slate-900 hover:bg-slate-50 transition">
               Features
             </a>
-            <a href="#how" className="px-3.5 py-2 rounded-lg hover:text-slate-900 hover:bg-slate-100/60 transition">
-              How it works
+            <a href="#pricing" className="px-3 py-2 rounded-lg hover:text-slate-900 hover:bg-slate-50 transition">
+              Pricing
+            </a>
+            <a href="#testimonials" className="px-3 py-2 rounded-lg hover:text-slate-900 hover:bg-slate-50 transition">
+              Success Stories
             </a>
           </nav>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3">
             <Link
               href="/sign-in"
-              className="hidden sm:inline-flex px-4 py-2 text-sm font-medium text-slate-700 rounded-xl hover:bg-slate-100 transition"
+              className="hidden sm:inline-flex px-4 py-2 text-sm font-semibold text-slate-700 rounded-xl hover:bg-slate-100 transition"
             >
               Sign in
             </Link>
             <Link
-              href="/dashboard"
-              className="relative group inline-flex items-center gap-2 px-4.5 py-2 text-sm font-semibold text-white bg-slate-900 rounded-xl hover:bg-slate-800 transition shadow-sm hover:shadow-md"
+              href="/sign-up"
+              className="inline-flex items-center gap-1.5 px-4.5 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-md shadow-indigo-200"
             >
-              <span>Get started free</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              Start free
+              <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
       </header>
 
-      {/* ── Hero ───────────────────────────────────────────────── */}
-      <section className="relative dot-grid pt-12 sm:pt-20 pb-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
-          {/* Badge */}
-          <div className="rise-in inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 border border-indigo-200/80 shadow-sm shadow-indigo-100 text-indigo-700 text-xs font-semibold mb-8 backdrop-blur-md">
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-600"></span>
-            </span>
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-            <span>AI-First Form Builder & Conversational Agents</span>
+      {/* ── Hero Section ────────────────────────────────────────── */}
+      <section className="relative pt-16 sm:pt-24 pb-20 overflow-hidden bg-gradient-to-b from-indigo-50/70 via-white to-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 text-center">
+          {/* Audience Target Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-100/80 border border-indigo-200 text-indigo-800 text-xs font-bold mb-8 shadow-sm">
+            <Sparkles className="w-4 h-4 text-indigo-600" />
+            <span>AI Lead Qualification for Clinics, Real Estate & Local Agencies</span>
           </div>
 
-          {/* Heading */}
-          <h1 className="rise-in rise-in-1 text-5xl sm:text-7xl font-extrabold tracking-tight leading-[1.08] max-w-4xl mx-auto">
-            Forms that talk.
-            <br />
-            <span className="text-gradient">Chatbots that convert.</span>
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold text-slate-900 tracking-tight leading-[1.08] max-w-5xl mx-auto">
+            Turn Website Visitors into <br className="hidden sm:inline" />
+            <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 bg-clip-text text-transparent">
+              Qualified Leads 24/7
+            </span>{" "}
+            with AI Chat Agents
           </h1>
 
-          {/* Subheading */}
-          <p className="rise-in rise-in-2 mt-6 text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed font-normal">
-            Turn a single sentence into a high-converting web form or an intelligent conversational agent — grounded in your business data, ready in seconds.
+          <p className="mt-6 text-base sm:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+            Stop losing prospective clients to boring, abandoned contact forms. FormAI engages your website visitors, answers their questions using your custom FAQs, and captures qualified leads automatically.
           </p>
 
-          {/* CTA Buttons */}
-          <div className="rise-in rise-in-3 mt-10 flex flex-col sm:flex-row items-center justify-center gap-3.5">
+          {/* Hero Action Buttons */}
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/dashboard"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 text-base font-semibold text-white bg-gradient-to-r from-indigo-600 via-indigo-600 to-violet-600 rounded-2xl hover:opacity-95 shadow-xl shadow-indigo-500/25 transition-all hover:scale-[1.02] hover:-translate-y-0.5"
+              href="/sign-up"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 text-base font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-2xl shadow-xl shadow-indigo-500/25 transition hover:scale-[1.02]"
             >
-              <Sparkle className="w-4 h-4 text-indigo-200" />
-              <span>Create with AI for Free</span>
-              <ArrowRight className="w-4 h-4" />
+              Start free today
+              <ArrowRight className="w-5 h-5" />
             </Link>
-            <a
-              href="#products"
-              className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-4 text-base font-medium text-slate-700 bg-white/90 border border-slate-200/90 rounded-2xl hover:border-slate-300 hover:bg-slate-50 transition shadow-sm backdrop-blur-sm"
+
+            <Link
+              href={demoLink}
+              target={demoBotId ? "_blank" : undefined}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-bold text-slate-800 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl transition shadow-sm"
             >
-              Explore Live Demo
-            </a>
+              <Bot className="w-5 h-5 text-indigo-600" />
+              See a live demo
+            </Link>
           </div>
 
-          <p className="mt-4 text-xs text-slate-400 font-medium">
-            ⚡ No credit card required · Free instant deployment · Zero lock-in
+          <p className="mt-4 text-xs font-medium text-slate-500">
+            ✓ No credit card required · Live in 2 minutes · 1-line website embed
           </p>
 
-          {/* Interactive Prompt Inspiration Pills */}
-          <div className="mt-10 max-w-3xl mx-auto">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-              Popular AI Prompts you can try
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {samplePrompts.map((item, idx) => (
-                <Link
-                  key={idx}
-                  href="/dashboard"
-                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/80 border border-slate-200 text-xs text-slate-700 hover:border-indigo-300 hover:bg-indigo-50/50 hover:text-indigo-900 transition shadow-sm"
-                >
-                  <span>{item.icon}</span>
-                  <span className="font-semibold">{item.label}</span>
-                  <span className="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
-                    {item.type}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Hero product mockup: form + chat side by side with modern styling */}
-        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-12">
-          <div className="rise-in rise-in-3 grid md:grid-cols-2 gap-6 items-start">
-            {/* Mockup 1: Classic Form */}
-            <div className="bg-white/95 rounded-3xl border border-slate-200/80 shadow-2xl shadow-slate-900/10 p-6 sm:p-7 text-left backdrop-blur-xl relative overflow-hidden group hover:border-indigo-300 transition-colors">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50/80 rounded-bl-full pointer-events-none -z-0" />
-              
-              <div className="flex items-center justify-between mb-5 relative z-10">
+          {/* Hero Visual Showcase Preview */}
+          <div className="mt-14 max-w-5xl mx-auto rounded-3xl bg-slate-900 p-3 sm:p-4 shadow-2xl border border-slate-800">
+            <div className="bg-slate-950 rounded-2xl p-4 sm:p-6 text-left border border-slate-800/80 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-red-400/80 inline-block" />
-                  <span className="w-3 h-3 rounded-full bg-amber-400/80 inline-block" />
-                  <span className="w-3 h-3 rounded-full bg-emerald-400/80 inline-block" />
-                  <span className="ml-2 text-[11px] text-slate-400 font-mono">formai.app/f/demo</span>
+                  <div className="w-3 h-3 rounded-full bg-rose-500" />
+                  <div className="w-3 h-3 rounded-full bg-amber-500" />
+                  <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                  <span className="ml-2 text-xs font-mono text-slate-400">your-website.com</span>
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100">
-                  Form Mode
+                <span className="text-xs font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-800 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  FormAI Widget Active
                 </span>
               </div>
 
-              <div className="relative z-10">
-                <p className="font-bold text-slate-900 text-lg">Product Feedback Survey</p>
-                <p className="text-xs text-slate-500 mb-5">Generated automatically in 4 seconds</p>
+              {/* Mock Chat Conversation */}
+              <div className="space-y-3 max-w-2xl text-xs sm:text-sm font-sans pt-2">
+                <div className="flex gap-3 items-start">
+                  <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
+                    🤖
+                  </div>
+                  <div className="bg-slate-800 text-slate-100 p-3 rounded-2xl rounded-tl-none border border-slate-700/80">
+                    Hello! Welcome to DentalCare Clinic. Are you looking to book an appointment or check our teeth whitening packages?
+                  </div>
+                </div>
 
-                <div className="space-y-3.5">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">
-                      Full Name <span className="text-red-400">*</span>
-                    </label>
-                    <div className="h-9.5 rounded-xl border border-slate-200 bg-slate-50/80 px-3 flex items-center text-xs text-slate-700 font-medium">
-                      Alex Johnson
+                <div className="flex gap-3 items-start justify-end">
+                  <div className="bg-indigo-600 text-white p-3 rounded-2xl rounded-tr-none">
+                    Hi! I need a consultation this Friday and want to know if you accept insurance?
+                  </div>
+                </div>
+
+                <div className="flex gap-3 items-start">
+                  <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
+                    🤖
+                  </div>
+                  <div className="bg-slate-800 text-slate-100 p-3 rounded-2xl rounded-tl-none border border-slate-700/80 space-y-2">
+                    <p>Yes! We accept major insurance providers. I can lock in your Friday appointment right now. What's your name and phone number?</p>
+                    <div className="pt-1 flex items-center gap-2">
+                      <span className="px-2 py-1 bg-emerald-900/60 border border-emerald-700/80 text-emerald-300 text-[11px] rounded-lg font-mono">
+                        🔥 High Lead Priority Detected
+                      </span>
                     </div>
                   </div>
-                  <div>
-                    <label className="text-xs font-semibold text-slate-700 block mb-1">How satisfied are you with our speed?</label>
-                    <div className="flex gap-1.5 p-1 bg-slate-50/60 rounded-xl border border-slate-100 w-fit">
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <Star key={i} className={`w-5 h-5 ${i <= 4 ? "text-amber-400 fill-amber-400" : "text-slate-300"}`} />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="h-10.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-md shadow-indigo-500/20">
-                    <Send className="w-3.5 h-3.5" />
-                    Submit Response
-                  </div>
                 </div>
-
-                <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-                  <span className="flex items-center gap-1.5 font-medium text-slate-600">
-                    <FileText className="w-3.5 h-3.5 text-indigo-600" />
-                    Classic AI Web Form
-                  </span>
-                  <span className="text-emerald-600 font-semibold flex items-center gap-1">
-                    <Check className="w-3 h-3" /> Live Validation
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Mockup 2: Conversational Agent */}
-            <div className="bg-white/95 rounded-3xl border border-slate-200/80 shadow-2xl shadow-indigo-900/15 overflow-hidden text-left md:mt-6 backdrop-blur-xl group hover:border-indigo-300 transition-colors">
-              <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 px-5 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-lg">
-                      🤖
-                    </div>
-                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-slate-900" />
-                  </div>
-                  <div>
-                    <p className="text-white text-sm font-bold leading-none">Ava — FormAI Assistant</p>
-                    <p className="text-indigo-200/70 text-[11px] mt-1 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      Grounded in company FAQs
-                    </p>
-                  </div>
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-400/20">
-                  Chatbot Mode
-                </span>
-              </div>
-
-              <div className="p-5 space-y-3 bg-slate-50/70">
-                <div className="max-w-[88%] bg-white border border-slate-200 rounded-2xl rounded-bl-sm px-4 py-2.5 text-xs text-slate-700 shadow-sm leading-relaxed">
-                  Hi! 👋 Ask me anything about our plans — and I can help sign you up!
-                </div>
-                <div className="max-w-[88%] ml-auto bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl rounded-br-sm px-4 py-2.5 text-xs shadow-md shadow-indigo-500/20 leading-relaxed">
-                  I&apos;m Sarah from Acme, email sarah@acme.com — do you support custom webhooks?
-                </div>
-                <div className="max-w-[88%] bg-white border border-slate-200 rounded-2xl rounded-bl-sm px-4 py-2.5 text-xs text-slate-700 shadow-sm leading-relaxed">
-                  Yes, Sarah! We send HMAC-signed webhooks to Slack, Zapier, or your API. 🚀 What team size are you planning for?
-                </div>
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-                    <Check className="w-2.5 h-2.5" /> 2 fields captured
-                  </span>
-                  <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                    🔥 High lead priority
-                  </span>
-                </div>
-              </div>
-
-              <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 bg-white">
-                <span className="flex items-center gap-1.5 font-medium text-slate-600">
-                  <Bot className="w-3.5 h-3.5 text-indigo-600" />
-                  Conversational AI Chatbot
-                </span>
-                <span className="text-indigo-600 font-semibold flex items-center gap-1">
-                  <Zap className="w-3 h-3" /> Multi-Entity RAG
-                </span>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Stats Strip ────────────────────────────────────────── */}
-      <section className="border-y border-slate-200/70 bg-gradient-to-r from-slate-50 via-white to-slate-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          {[
-            ["60 sec", "Prompt to live deployment", "⚡"],
-            ["10+", "Field types & conditional rules", "🧩"],
-            ["1 line", "Embeddable floating widget", "🌐"],
-            ["100%", "Data privacy & zero lock-in", "🔒"],
-          ].map(([num, label, icon]) => (
-            <div key={label} className="flex flex-col items-center">
-              <span className="text-xl mb-1">{icon}</span>
-              <p className="text-3xl font-extrabold tracking-tight text-slate-900">{num}</p>
-              <p className="text-xs text-slate-500 mt-1 font-medium">{label}</p>
+      {/* ── Problem vs Solution ─────────────────────────────────── */}
+      <section id="problem" className="py-20 bg-slate-50 border-y border-slate-200/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-xs font-extrabold uppercase tracking-widest text-indigo-600 mb-2">
+              The Conversion Gap
+            </h2>
+            <h3 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
+              Static Contact Forms Are Killing Your Conversions
+            </h3>
+            <p className="mt-4 text-base sm:text-lg text-slate-600">
+              Local service clients expect instant responses. Traditional forms create friction and delay, causing high bounce rates.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* The Old Way */}
+            <div className="bg-white rounded-3xl p-8 border border-rose-100 shadow-sm relative overflow-hidden">
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-6">
+                <XCircle className="w-6 h-6" />
+              </div>
+              <h4 className="text-xl font-extrabold text-slate-900 mb-2">The Old Way: Static Contact Forms</h4>
+              <p className="text-xs text-slate-500 mb-6">Cold, multi-field forms that visitors abandon before pressing submit.</p>
+
+              <ul className="space-y-4 text-sm text-slate-700">
+                <li className="flex items-start gap-3">
+                  <XCircle className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
+                  <span><strong>80%+ drop-off rate</strong> on long static forms with required fields</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <XCircle className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
+                  <span><strong>Slow response times</strong>: prospects wait hours for an email reply</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <XCircle className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
+                  <span><strong>Zero lead scoring</strong>: sales teams waste time on unqualified leads</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <XCircle className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
+                  <span><strong>No FAQ support</strong>: visitors leave if they can't find instant answers</span>
+                </li>
+              </ul>
             </div>
-          ))}
+
+            {/* The FormAI Way */}
+            <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white rounded-3xl p-8 border border-indigo-700/50 shadow-xl relative overflow-hidden">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center mb-6 shadow-md shadow-indigo-500/30">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <h4 className="text-xl font-extrabold text-white mb-2">The FormAI Way: 24/7 AI Chat Agents</h4>
+              <p className="text-xs text-indigo-200 mb-6">Interactive, human-like chat experience tailored to your exact business rules.</p>
+
+              <ul className="space-y-4 text-sm text-slate-200">
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <span><strong>3x higher conversion rates</strong> with conversational multi-entity lead capture</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <span><strong>Instant RAG answers</strong> trained on your pricing, insurance, and FAQ guidelines</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <span><strong>Automated Sentiment & Lead Priority Scoring</strong> for immediate sales follow-up</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <span><strong>1-Line Website Embed</strong> compatible with WordPress, Webflow, Shopify & custom sites</span>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ── Two Products Section ────────────────────────────────── */}
-      <section id="products" className="max-w-6xl mx-auto px-4 sm:px-6 py-24">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-600 mb-3">Two products, one prompt</p>
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight">
-            Collect data your way
+      {/* ── How It Works (3 Steps) ───────────────────────────────── */}
+      <section id="how" className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-xs font-extrabold uppercase tracking-widest text-indigo-600 mb-2">
+              Three-Step Setup
+            </h2>
+            <h3 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
+              Live on Your Site in 2 Minutes
+            </h3>
+            <p className="mt-4 text-base sm:text-lg text-slate-600">
+              No technical skills or complex workflow builders required.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Step 1 */}
+            <div className="bg-slate-50 rounded-3xl p-8 border border-slate-200/80 hover:border-indigo-300 transition relative">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white font-extrabold flex items-center justify-center text-base mb-6 shadow-md shadow-indigo-200">
+                1
+              </div>
+              <h4 className="text-lg font-extrabold text-slate-900 mb-2">Describe Your Bot in Plain English</h4>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Type what you need: <em>"Real estate assistant that qualifies home buyers by budget, location, and timeline."</em> FormAI automatically generates the conversational persona and structured fields.
+              </p>
+            </div>
+
+            {/* Step 2 */}
+            <div className="bg-slate-50 rounded-3xl p-8 border border-slate-200/80 hover:border-indigo-300 transition relative">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white font-extrabold flex items-center justify-center text-base mb-6 shadow-md shadow-indigo-200">
+                2
+              </div>
+              <h4 className="text-lg font-extrabold text-slate-900 mb-2">Train on Your FAQs & Guidelines</h4>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Paste your business FAQs, clinic return policies, consultation fees, or service details into the RAG Knowledge Base. Your bot answers visitor questions accurately without hallucinating.
+              </p>
+            </div>
+
+            {/* Step 3 */}
+            <div className="bg-slate-50 rounded-3xl p-8 border border-slate-200/80 hover:border-indigo-300 transition relative">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white font-extrabold flex items-center justify-center text-base mb-6 shadow-md shadow-indigo-200">
+                3
+              </div>
+              <h4 className="text-lg font-extrabold text-slate-900 mb-2">Embed 1 Line of Code</h4>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Copy the single-line JavaScript snippet and paste it onto your site. A floating, interactive chat bubble appears in the bottom-right corner immediately.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Feature Grid ────────────────────────────────────────── */}
+      <section id="features" className="py-20 bg-slate-900 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-xs font-extrabold uppercase tracking-widest text-indigo-400 mb-2">
+              Built for Lead Generation
+            </h2>
+            <h3 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
+              Features Designed to Convert Visitors into Clients
+            </h3>
+            <p className="mt-4 text-base sm:text-lg text-slate-400">
+              Everything local clinics, firms, and agencies need to manage inquiries seamlessly.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Feature 1 */}
+            <div className="bg-slate-800/80 rounded-3xl p-6 border border-slate-700/80">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mb-4">
+                <BookOpen className="w-5 h-5" />
+              </div>
+              <h4 className="text-base font-extrabold text-white mb-1.5">RAG Knowledge Base</h4>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Train your chatbot with business FAQs, consultation terms, and pricing so it answers visitor inquiries accurately before asking for contact info.
+              </p>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="bg-slate-800/80 rounded-3xl p-6 border border-slate-700/80">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mb-4">
+                <Zap className="w-5 h-5" />
+              </div>
+              <h4 className="text-base font-extrabold text-white mb-1.5">Multi-Entity Extraction</h4>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Visitors don't need to answer one by one. If they say <em>"I'm Dr. Shah, email shah@clinic.com and budget is ₹50k"</em>, all 3 fields are captured at once.
+              </p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="bg-slate-800/80 rounded-3xl p-6 border border-slate-700/80">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mb-4">
+                <BarChart3 className="w-5 h-5" />
+              </div>
+              <h4 className="text-base font-extrabold text-white mb-1.5">AI Sentiment & Lead Scoring</h4>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Every conversation is scored (High Lead, Medium, Standard) and analyzed for sentiment (Positive, Neutral, Negative) so sales prioritizes hot prospects.
+              </p>
+            </div>
+
+            {/* Feature 4 */}
+            <div className="bg-slate-800/80 rounded-3xl p-6 border border-slate-700/80">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mb-4">
+                <Globe className="w-5 h-5" />
+              </div>
+              <h4 className="text-base font-extrabold text-white mb-1.5">1-Line Floating Website Widget</h4>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Single script tag loads a fast, mobile-responsive chat widget in the bottom-right corner of WordPress, Webflow, Shopify, or HTML sites.
+              </p>
+            </div>
+
+            {/* Feature 5 */}
+            <div className="bg-slate-800/80 rounded-3xl p-6 border border-slate-700/80">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mb-4">
+                <FileText className="w-5 h-5" />
+              </div>
+              <h4 className="text-base font-extrabold text-white mb-1.5">1-Click RFC-4180 CSV Export</h4>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Download collected respondent data, AI sentiment, and lead priority scores cleanly into Excel, Google Sheets, or CRM systems.
+              </p>
+            </div>
+
+            {/* Feature 6 */}
+            <div className="bg-slate-800/80 rounded-3xl p-6 border border-slate-700/80">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mb-4">
+                <Webhook className="w-5 h-5" />
+              </div>
+              <h4 className="text-base font-extrabold text-white mb-1.5">Outbound Webhooks</h4>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Trigger real-time webhooks on new form submissions or high-priority lead events directly to Zapier, Make, or custom API endpoints.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Pricing Section (Sync'd with PLAN_LIMITS in billing.ts) ── */}
+      <section id="pricing" className="py-20 bg-slate-50 border-t border-slate-200/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-xs font-extrabold uppercase tracking-widest text-indigo-600 mb-2">
+              Simple, Transparent Pricing
+            </h2>
+            <h3 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
+              Plans for Local Businesses & Reseller Agencies
+            </h3>
+            <p className="mt-4 text-base sm:text-lg text-slate-600">
+              Start free today. Upgrade anytime for higher bot limits, custom branding, and white-label agency capabilities.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+            {/* FREE PLAN */}
+            <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm flex flex-col justify-between">
+              <div>
+                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 block mb-2">
+                  🌱 {PLAN_LIMITS.FREE.name}
+                </span>
+                <div className="flex items-baseline gap-1 my-3">
+                  <span className="text-4xl font-extrabold text-slate-900">₹0</span>
+                  <span className="text-xs text-slate-500">/ month</span>
+                </div>
+                <p className="text-xs text-slate-500 mb-6">Perfect for testing and small single-page websites.</p>
+
+                <ul className="space-y-3 text-xs text-slate-700 mb-8 border-t border-slate-100 pt-6">
+                  <li className="flex items-center gap-2 font-medium">
+                    <Check className="w-4 h-4 text-indigo-600" />
+                    <span><strong>1 Active Bot / Form</strong></span>
+                  </li>
+                  <li className="flex items-center gap-2 font-medium">
+                    <Check className="w-4 h-4 text-indigo-600" />
+                    <span><strong>50 Responses</strong> / month</span>
+                  </li>
+                  <li className="flex items-center gap-2 font-medium">
+                    <Check className="w-4 h-4 text-indigo-600" />
+                    <span>Standard Lead Capture</span>
+                  </li>
+                  <li className="flex items-center gap-2 font-medium text-slate-400">
+                    <span className="w-4 text-center">✕</span>
+                    <span>FormAI Branding Shown</span>
+                  </li>
+                </ul>
+              </div>
+
+              <Link
+                href="/sign-up"
+                className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs rounded-xl text-center transition"
+              >
+                Start free
+              </Link>
+            </div>
+
+            {/* PRO PLAN */}
+            <div className="bg-white rounded-3xl p-8 border-2 border-indigo-600 shadow-xl relative flex flex-col justify-between">
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-indigo-600 text-white text-[11px] font-extrabold tracking-wider uppercase shadow-md">
+                MOST POPULAR FOR CLINICS & FIRMS
+              </div>
+
+              <div>
+                <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-600 block mb-2">
+                  ⚡ {PLAN_LIMITS.PRO.name}
+                </span>
+                <div className="flex items-baseline gap-1 my-3">
+                  <span className="text-4xl font-extrabold text-slate-900">₹1,999</span>
+                  <span className="text-xs text-slate-500">/ month</span>
+                </div>
+                <p className="text-xs text-slate-500 mb-6">Ideal for active clinics, real estate teams, & service firms.</p>
+
+                <ul className="space-y-3 text-xs text-slate-700 mb-8 border-t border-slate-100 pt-6">
+                  <li className="flex items-center gap-2 font-medium">
+                    <Check className="w-4 h-4 text-indigo-600" />
+                    <span><strong>5 Active Bots / Forms</strong></span>
+                  </li>
+                  <li className="flex items-center gap-2 font-medium">
+                    <Check className="w-4 h-4 text-indigo-600" />
+                    <span><strong>Unlimited Responses</strong></span>
+                  </li>
+                  <li className="flex items-center gap-2 font-medium">
+                    <Check className="w-4 h-4 text-indigo-600" />
+                    <span><strong>Remove Branding</strong></span>
+                  </li>
+                  <li className="flex items-center gap-2 font-medium">
+                    <Check className="w-4 h-4 text-indigo-600" />
+                    <span>RAG Knowledge Base FAQ Training</span>
+                  </li>
+                  <li className="flex items-center gap-2 font-medium">
+                    <Check className="w-4 h-4 text-indigo-600" />
+                    <span>AI Sentiment & Lead Scoring</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="space-y-2">
+                <a
+                  href={UPGRADE_CONTACT.whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition shadow-md shadow-emerald-200"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Contact to Upgrade (WhatsApp)
+                </a>
+                <a
+                  href={`mailto:${UPGRADE_CONTACT.email}?subject=Pro%20Plan%20Upgrade%20Inquiry`}
+                  className="block text-center text-[11px] text-slate-500 hover:text-slate-800 font-medium"
+                >
+                  Or email {UPGRADE_CONTACT.email}
+                </a>
+              </div>
+            </div>
+
+            {/* AGENCY PLAN */}
+            <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm flex flex-col justify-between">
+              <div>
+                <span className="text-xs font-extrabold uppercase tracking-wider text-purple-700 block mb-2">
+                  🚀 {PLAN_LIMITS.AGENCY.name}
+                </span>
+                <div className="flex items-baseline gap-1 my-3">
+                  <span className="text-4xl font-extrabold text-slate-900">₹9,999</span>
+                  <span className="text-xs text-slate-500">/ month</span>
+                </div>
+                <p className="text-xs text-slate-500 mb-6">For digital agencies reselling AI chatbots to multiple clients.</p>
+
+                <ul className="space-y-3 text-xs text-slate-700 mb-8 border-t border-slate-100 pt-6">
+                  <li className="flex items-center gap-2 font-medium">
+                    <Check className="w-4 h-4 text-indigo-600" />
+                    <span><strong>Unlimited Bots & Forms</strong></span>
+                  </li>
+                  <li className="flex items-center gap-2 font-medium">
+                    <Check className="w-4 h-4 text-indigo-600" />
+                    <span><strong>Unlimited Responses</strong></span>
+                  </li>
+                  <li className="flex items-center gap-2 font-medium">
+                    <Check className="w-4 h-4 text-indigo-600" />
+                    <span><strong>White-label Branding</strong></span>
+                  </li>
+                  <li className="flex items-center gap-2 font-medium">
+                    <Check className="w-4 h-4 text-indigo-600" />
+                    <span>Multi-Workspace Management</span>
+                  </li>
+                  <li className="flex items-center gap-2 font-medium">
+                    <Check className="w-4 h-4 text-indigo-600" />
+                    <span>Priority Onboarding & Support</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="space-y-2">
+                <a
+                  href={UPGRADE_CONTACT.whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition shadow-md shadow-indigo-200"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Contact to Upgrade (WhatsApp)
+                </a>
+                <a
+                  href={`mailto:${UPGRADE_CONTACT.email}?subject=Agency%20Plan%20Upgrade%20Inquiry`}
+                  className="block text-center text-[11px] text-slate-500 hover:text-slate-800 font-medium"
+                >
+                  Or email {UPGRADE_CONTACT.email}
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Personal Activation Notice */}
+          <div className="mt-12 bg-indigo-50/80 border border-indigo-100 rounded-2xl p-6 text-center max-w-3xl mx-auto">
+            <h4 className="text-sm font-extrabold text-indigo-950 flex items-center justify-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-indigo-600" />
+              Personal Onboarding & Direct Activation
+            </h4>
+            <p className="text-xs text-indigo-900/80 mt-1.5 leading-relaxed">
+              Paid plans are activated directly by our founding team upon confirmation of bank transfer or UPI payment. Enjoy 1-on-1 personal onboarding support with zero recurring subscription surprises.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Social Proof & Testimonials ──────────────────────────── */}
+      {/* TODO: Replace with real testimonials once we have client case studies */}
+      <section id="testimonials" className="py-20 bg-white border-t border-slate-200/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-xs font-extrabold uppercase tracking-widest text-indigo-600 mb-2">
+              Success Stories
+            </h2>
+            <h3 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
+              Trusted by Growing Local Businesses
+            </h3>
+            <p className="mt-4 text-base sm:text-lg text-slate-600">
+              Here is how clinics, agencies, and firms qualify prospects on autopilot.
+            </p>
+          </div>
+
+          {/* TODO: Placeholder testimonial cards - swap before final launch */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Testimonial 1 */}
+            <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200/80 flex flex-col justify-between space-y-4">
+              <div className="space-y-3">
+                <div className="flex text-amber-400">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-current" />
+                  ))}
+                </div>
+                <p className="text-xs text-slate-700 italic leading-relaxed">
+                  "We captured 42 qualified home buyer leads in our first week using the floating widget. It answers pricing questions and schedules site visits even at midnight."
+                </p>
+              </div>
+              <div className="pt-4 border-t border-slate-200/60 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">
+                  SM
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-900">Sarah M.</p>
+                  <p className="text-[10px] text-slate-500">Principal Broker · Urban Living Real Estate</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Testimonial 2 */}
+            <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200/80 flex flex-col justify-between space-y-4">
+              <div className="space-y-3">
+                <div className="flex text-amber-400">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-current" />
+                  ))}
+                </div>
+                <p className="text-xs text-slate-700 italic leading-relaxed">
+                  "Patients get instant answers about insurance coverage and consultation fees after hours. Our front-desk team receives pre-qualified lead summaries every morning."
+                </p>
+              </div>
+              <div className="pt-4 border-t border-slate-200/60 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">
+                  AV
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-900">Dr. Aris V.</p>
+                  <p className="text-[10px] text-slate-500">Clinical Director · SmileCare Dental</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Testimonial 3 */}
+            <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200/80 flex flex-col justify-between space-y-4">
+              <div className="space-y-3">
+                <div className="flex text-amber-400">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-current" />
+                  ))}
+                </div>
+                <p className="text-xs text-slate-700 italic leading-relaxed">
+                  "We resell white-labeled FormAI chatbots to 15 local agency clients as an add-on service. The lead priority scoring makes our clients jump for joy."
+                </p>
+              </div>
+              <div className="pt-4 border-t border-slate-200/60 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">
+                  MT
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-900">Marcus T.</p>
+                  <p className="text-[10px] text-slate-500">Growth Director · Apex Marketing Agency</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Final Call to Action ────────────────────────────────── */}
+      <section className="py-20 bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white relative overflow-hidden">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center relative z-10">
+          <div className="w-14 h-14 rounded-3xl bg-indigo-600 text-white flex items-center justify-center mx-auto mb-6 shadow-xl shadow-indigo-500/30">
+            <Bot className="w-7 h-7" />
+          </div>
+
+          <h2 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
+            Ready to Turn Website Visitors into Clients?
           </h2>
-          <p className="mt-4 text-slate-600 text-lg">
-            Choose the experience that fits your audience — structured forms for precision, or conversational bots for engagement.
+          <p className="mt-4 text-base sm:text-lg text-indigo-200 max-w-2xl mx-auto">
+            Join local clinics, firms, and agencies capturing 3x more qualified leads today. Build your first AI chat agent in under 2 minutes.
+          </p>
+
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              href="/sign-up"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 text-base font-bold text-indigo-950 bg-white hover:bg-slate-100 rounded-2xl shadow-xl transition hover:scale-[1.02]"
+            >
+              Build your AI Agent free
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+          </div>
+
+          <p className="mt-4 text-xs font-medium text-indigo-300">
+            Free forever tier · No credit card required · Instant setup
           </p>
         </div>
-
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Card 1 */}
-          <div className="lift rounded-3xl border border-slate-200 bg-white p-8 sm:p-9 shadow-sm relative overflow-hidden">
-            <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center mb-6 shadow-md">
-              <FileText className="w-6 h-6" />
-            </div>
-            <h3 className="text-2xl font-bold text-slate-900">Classic AI Forms</h3>
-            <p className="text-sm text-slate-600 mt-2 leading-relaxed">
-              Structured multi-field pages with instant validation, conditional logic, multi-step wizards, and customizable brand accents.
-            </p>
-            <ul className="mt-7 space-y-3">
-              {[
-                "10+ smart field types (rating, files, select, date)",
-                "Dynamic conditional show/hide rules",
-                "Multi-step wizard pagination with progress",
-                "UTM parameter tracking & RFC-4180 CSV export",
-              ].map((f) => (
-                <li key={f} className="flex items-center gap-3 text-sm text-slate-700">
-                  <span className="w-5 h-5 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center flex-shrink-0">
-                    <Check className="w-3 h-3 text-emerald-600" />
-                  </span>
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-8 pt-6 border-t border-slate-100">
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-700"
-              >
-                Generate a Classic Form <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-
-          {/* Card 2 */}
-          <div className="lift rounded-3xl border border-indigo-200/80 bg-gradient-to-b from-indigo-50/70 via-white to-white p-8 sm:p-9 shadow-sm relative overflow-hidden">
-            <div className="absolute top-6 right-6 text-[10px] font-bold px-3 py-1 rounded-full bg-indigo-600 text-white shadow-sm">
-              MOST POPULAR
-            </div>
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/30">
-              <Bot className="w-6 h-6" />
-            </div>
-            <h3 className="text-2xl font-bold text-slate-900">Conversational AI Agents</h3>
-            <p className="text-sm text-slate-600 mt-2 leading-relaxed">
-              An intelligent chatbot that answers visitor questions directly from your knowledge base while capturing form answers naturally.
-            </p>
-            <ul className="mt-7 space-y-3">
-              {[
-                "Trained on your website URLs & FAQ documents",
-                "Multi-entity smart extraction from natural sentences",
-                "Full transcripts recorded — including abandoned chats",
-                "1-line floating widget for Shopify, Webflow & HTML",
-              ].map((f) => (
-                <li key={f} className="flex items-center gap-3 text-sm text-slate-700">
-                  <span className="w-5 h-5 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center flex-shrink-0">
-                    <Check className="w-3 h-3 text-indigo-600" />
-                  </span>
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-8 pt-6 border-t border-indigo-100">
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-700"
-              >
-                Create an AI Chatbot <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-        </div>
       </section>
 
-      {/* ── Features Bento Grid ─────────────────────────────────── */}
-      <section id="features" className="bg-slate-950 text-white py-24 relative overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-400 mb-3">Beyond Standard Forms</p>
-            <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight">
-              Every response, understood
-            </h2>
-            <p className="mt-4 text-slate-400 text-lg">
-              FormAI analyzes every submission with LLMs so you act immediately on high-value signal.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              [BarChart3, "AI Lead Priority Scoring", "Submissions are categorized into High, Medium, or Low lead score based on intent.", "from-indigo-500/20 to-blue-500/10"],
-              [MessageSquare, "Sentiment Analysis", "Classifies respondent attitude (Positive, Neutral, Negative) for immediate customer service triage.", "from-violet-500/20 to-purple-500/10"],
-              [BookOpen, "RAG Knowledge Grounding", "Train bots by typing FAQs or scraping your live website URL in a single click.", "from-pink-500/20 to-rose-500/10"],
-              [Webhook, "Signed Enterprise Webhooks", "Trigger webhooks with HMAC SHA-256 signatures to Slack, Discord, Zapier, or your backend.", "from-emerald-500/20 to-teal-500/10"],
-              [Globe, "1-Line Embed Widget", "Drop a single script tag into WordPress, Shopify, or Webflow to float a responsive chat bubble.", "from-amber-500/20 to-orange-500/10"],
-              [ShieldCheck, "Zero Lock-In & Self-Hosted DB", "All answers and transcripts live in your own PostgreSQL instance with 1-click CSV export.", "from-cyan-500/20 to-blue-500/10"],
-            ].map(([Icon, title, desc, grad]: any) => (
-              <div
-                key={title}
-                className="rounded-3xl border border-white/10 bg-gradient-to-b bg-white/[0.03] p-7 hover:bg-white/[0.06] hover:border-white/20 transition-all lift"
-              >
-                <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${grad} border border-white/10 flex items-center justify-center mb-5 text-indigo-400`}>
-                  <Icon className="w-5 h-5" />
-                </div>
-                <h3 className="font-bold text-lg text-white">{title}</h3>
-                <p className="text-sm text-slate-400 mt-2 leading-relaxed">{desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── How It Works ───────────────────────────────────────── */}
-      <section id="how" className="max-w-6xl mx-auto px-4 sm:px-6 py-24">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-600 mb-3">Simple Workflow</p>
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight">Three steps from prompt to live</h2>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-7">
-          {[
-            ["1. Describe in plain English", "Type what data you need — e.g., “a customer support intake bot that asks for order number and rating”.", Sparkles],
-            ["2. Refine & Train", "Customize bot persona, upload your website URL for instant RAG answers, or tweak conditional rules.", Zap],
-            ["3. Publish & Embed", "Share the direct link or copy a 1-line script tag to embed a floating chat bubble on your website.", Globe],
-          ].map(([title, desc, Icon]: any, i) => (
-            <div key={title} className="relative rounded-3xl border border-slate-200/80 bg-white p-8 lift shadow-sm">
-              <div className="flex items-center justify-between mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
-                  <Icon className="w-6 h-6" />
-                </div>
-                <span className="text-5xl font-black text-slate-100 select-none">{i + 1}</span>
-              </div>
-              <h3 className="text-lg font-bold text-slate-900">{title}</h3>
-              <p className="text-sm text-slate-500 mt-2.5 leading-relaxed">{desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Call to Action ─────────────────────────────────────── */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-24">
-        <div className="rounded-3xl bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 px-8 py-16 sm:py-20 text-center text-white shadow-2xl shadow-indigo-500/30 relative overflow-hidden">
-          <div className="absolute inset-0 dot-grid opacity-15" />
-          <div className="relative z-10">
-            <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight max-w-2xl mx-auto leading-tight">
-              Ready to build smarter forms with AI?
-            </h2>
-            <p className="mt-4 text-indigo-100 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
-              Describe your form in seconds and start capturing qualified leads right away.
-            </p>
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link
-                href="/dashboard"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-indigo-700 font-bold rounded-2xl hover:bg-indigo-50 transition shadow-lg hover:scale-[1.02]"
-              >
-                Start building free
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Footer ─────────────────────────────────────────────── */}
-      <footer className="border-t border-slate-200/80 py-10 bg-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* ── Footer ──────────────────────────────────────────────── */}
+      <footer className="bg-slate-950 text-slate-400 py-12 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center font-bold text-sm">
+            <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
               F
             </div>
-            <span className="font-bold text-slate-900">FormAI</span>
+            <span className="font-bold text-white tracking-tight text-sm">FormAI</span>
+            <span className="text-xs text-slate-500">© 2026 FormAI. All rights reserved.</span>
           </div>
-          <p className="text-xs text-slate-400">
-            © {new Date().getFullYear()} FormAI · AI Forms & Conversational Chatbots
-          </p>
+
+          <div className="flex items-center gap-6 text-xs font-medium">
+            <Link href="/sign-in" className="hover:text-white transition">
+              Sign in
+            </Link>
+            <Link href="/sign-up" className="hover:text-white transition">
+              Create Account
+            </Link>
+            <a href={`mailto:${UPGRADE_CONTACT.email}`} className="hover:text-white transition">
+              Support ({UPGRADE_CONTACT.email})
+            </a>
+          </div>
         </div>
       </footer>
     </div>
   );
 }
-
