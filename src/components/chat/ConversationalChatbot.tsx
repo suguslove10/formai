@@ -305,40 +305,38 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
           <button
             type="button"
             onClick={handleResetChat}
-            className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-xl transition text-xs flex items-center gap-1"
+            className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-xl transition text-xs flex items-center gap-1.5 border border-white/10"
             title="Restart Conversation"
           >
-            <RotateCcw className="w-4 h-4" />
-            <span className="hidden sm:inline">Restart</span>
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline font-medium">Restart</span>
           </button>
         )}
       </header>
 
-      {/* Progress Bar */}
-      <div className="w-full bg-slate-100 h-1.5 overflow-hidden">
+      {/* Progress Bar with Percentage */}
+      <div className="w-full bg-slate-100 relative">
         <div
-          className="h-full transition-all duration-500 ease-out"
+          className="h-1.5 transition-all duration-500 ease-out rounded-r-full shadow-sm"
           style={{ width: `${progressPercent}%`, backgroundColor: accent }}
-        ></div>
+        />
       </div>
 
       {/* Messages Thread */}
-      <div ref={threadRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 bg-slate-50/50">
+      <div ref={threadRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-slate-50/50">
         {messages.map((msg, msgIdx) => {
           const isBot = msg.role === "assistant";
-          // Interactive widgets only stay live on the latest message —
-          // answering an old question again would corrupt collected data
           const isLatest = msgIdx === messages.length - 1;
 
           return (
             <div
               key={msg.id}
-              className={`flex items-end gap-2.5 ${isBot ? "justify-start" : "justify-end"} animate-in fade-in slide-in-from-bottom-2 duration-200`}
+              className={`flex items-end gap-2.5 ${isBot ? "justify-start" : "justify-end"} rise-in`}
             >
               {isBot && (
                 <div
                   className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-base shadow-sm bg-white border border-slate-200 overflow-hidden ${
-                    botAvatarUrl ? "p-[2.5px]" : ""
+                    botAvatarUrl ? "p-[2px]" : ""
                   }`}
                 >
                   <BotAvatar
@@ -355,7 +353,7 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
                   className={`p-4 rounded-2xl text-sm leading-relaxed ${
                     isBot
                       ? "bg-white text-slate-900 border border-slate-200/90 shadow-sm rounded-bl-sm"
-                      : "text-white shadow-md rounded-br-sm font-medium"
+                      : "text-white shadow-md shadow-indigo-500/10 rounded-br-sm font-medium"
                   }`}
                   style={isBot ? undefined : { backgroundColor: accent }}
                 >
@@ -363,17 +361,18 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
 
                   {/* Inline Rating Widget inside Bot Message */}
                   {isBot && isLatest && msg.type === "rating" && !isCompleted && (
-                    <div className="mt-3 pt-3 border-t border-slate-100">
+                    <div className="mt-3.5 pt-3 border-t border-slate-100">
                       <p className="text-xs font-semibold text-slate-500 mb-2">Tap a star to rate:</p>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 p-1 bg-slate-50 rounded-xl border border-slate-100 w-fit">
                         {[1, 2, 3, 4, 5].map((star) => (
                           <button
                             key={star}
                             type="button"
                             onClick={() => handleSendMessage(`${star} Stars`, msg.fieldId || undefined, star)}
-                            className="p-1.5 rounded-lg hover:scale-125 transition focus:outline-none"
+                            className="p-1 rounded-lg hover:scale-125 transition-transform focus:outline-none"
+                            title={`${star} Star${star > 1 ? "s" : ""}`}
                           >
-                            <Star className="w-6 h-6 text-amber-400 fill-amber-400 hover:text-amber-500" />
+                            <Star className="w-6 h-6 text-amber-400 fill-amber-400 hover:text-amber-500 transition-colors" />
                           </button>
                         ))}
                       </div>
@@ -382,13 +381,13 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
 
                   {/* Inline Options Pills */}
                   {isBot && isLatest && msg.options && msg.options.length > 0 && !isCompleted && (
-                    <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-2">
+                    <div className="mt-3.5 pt-3 border-t border-slate-100 flex flex-wrap gap-2">
                       {msg.options.map((opt, i) => (
                         <button
                           key={i}
                           type="button"
                           onClick={() => handleSendMessage(opt, msg.fieldId || undefined, opt)}
-                          className="text-xs font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white border border-indigo-200 hover:border-indigo-600 px-3 py-1.5 rounded-xl transition shadow-sm hover:shadow active:scale-95"
+                          className="text-xs font-semibold bg-indigo-50/80 text-indigo-700 hover:bg-indigo-600 hover:text-white border border-indigo-200/80 hover:border-indigo-600 px-3.5 py-1.5 rounded-xl transition-all shadow-sm active:scale-95"
                         >
                           {opt}
                         </button>
@@ -398,7 +397,7 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
 
                   {/* Inline Date Shortcut */}
                   {isBot && isLatest && msg.type === "date" && !isCompleted && (
-                    <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2">
+                    <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center gap-2">
                       <input
                         type="date"
                         onChange={(e) => {
@@ -406,7 +405,7 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
                             handleSendMessage(e.target.value, msg.fieldId || undefined, e.target.value);
                           }
                         }}
-                        className="text-xs px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                        className="text-xs px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                       />
                     </div>
                   )}
@@ -427,26 +426,28 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
         })}
 
         {loading && (
-          <div className="flex items-center gap-2 text-xs text-slate-500 italic p-2 bg-white rounded-xl border border-slate-100 max-w-[160px] shadow-sm animate-pulse">
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600" />
-            <span>AI is replying...</span>
+          <div className="flex items-center gap-1.5 p-3.5 bg-white rounded-2xl border border-slate-200/80 max-w-[90px] shadow-sm rise-in">
+            <span className="w-2 h-2 rounded-full bg-indigo-600 animate-bounce" style={{ animationDelay: "0ms" }} />
+            <span className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: "150ms" }} />
+            <span className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: "300ms" }} />
           </div>
         )}
 
         {isCompleted && (
-          <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-3 animate-in zoom-in-95 duration-200 shadow-sm">
-            <div className="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-md shadow-emerald-200">
+          <div className="p-6 rounded-2xl bg-gradient-to-b from-emerald-50 to-emerald-100/50 border border-emerald-200 text-center space-y-3 shadow-md shadow-emerald-500/5 rise-in">
+            <div className="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-md shadow-emerald-300">
               <CheckCircle2 className="w-7 h-7" />
             </div>
-            <h3 className="text-base font-bold text-emerald-950">Submission Complete!</h3>
-            <p className="text-xs text-emerald-700 max-w-sm mx-auto">
-              Your answers have been stored securely. Thank you for completing this form.
+            <h3 className="text-base font-bold text-emerald-950">All Done! Submission Received 🎉</h3>
+            <p className="text-xs text-emerald-800 max-w-sm mx-auto leading-relaxed">
+              Your responses have been recorded securely. Thank you for taking the time to share your feedback!
             </p>
             <button
               type="button"
               onClick={handleResetChat}
-              className="inline-flex items-center gap-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition shadow-sm"
+              className="inline-flex items-center gap-1.5 px-4.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-sm hover:scale-105 active:scale-95"
             >
+              <RotateCcw className="w-3.5 h-3.5" />
               Submit Another Response
             </button>
           </div>
@@ -462,7 +463,7 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
             e.preventDefault();
             handleSendMessage();
           }}
-          className="p-3 sm:p-4 bg-white border-t border-slate-200 flex items-center gap-2"
+          className="p-3 sm:p-4 bg-white border-t border-slate-200 flex items-center gap-2.5"
         >
           <input
             type="text"
@@ -471,24 +472,24 @@ export function ConversationalChatbot({ form, isEmbed = false }: ConversationalC
             disabled={loading}
             placeholder={
               activeField
-                ? `Answer for "${activeField.label}" or ask anything...`
-                : "Type your message or answer here..."
+                ? `Answer for "${activeField.label}" or ask a question...`
+                : "Type your message or response..."
             }
-            className="flex-1 px-4 py-3 text-sm bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition disabled:opacity-50"
+            className="flex-1 px-4.5 py-3 text-sm bg-slate-50/80 border border-slate-200 rounded-2xl text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition disabled:opacity-50"
           />
 
           <button
             type="submit"
             disabled={!input.trim() || loading}
             style={{ backgroundColor: accent }}
-            className="w-11 h-11 rounded-2xl hover:opacity-90 text-white flex items-center justify-center shadow-md disabled:opacity-40 disabled:cursor-not-allowed transition hover:scale-105 active:scale-95 flex-shrink-0"
+            className="w-11 h-11 rounded-2xl hover:opacity-90 text-white flex items-center justify-center shadow-md shadow-indigo-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition hover:scale-105 active:scale-95 flex-shrink-0"
           >
             <Send className="w-4 h-4" />
           </button>
         </form>
       ) : (
-        <div className="p-4 bg-slate-50 border-t border-slate-200 text-center text-xs text-slate-500">
-          Conversation concluded.
+        <div className="p-3.5 bg-slate-50 border-t border-slate-200 text-center text-xs text-slate-500 font-medium">
+          ✨ Conversation completed
         </div>
       )}
     </div>

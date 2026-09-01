@@ -191,15 +191,15 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
 
   if (isSubmitted) {
     return (
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl p-8 sm:p-12 text-center max-w-xl mx-auto animate-in fade-in zoom-in-95 duration-200">
-        <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-6 shadow-md shadow-emerald-100">
-          <CheckCircle2 className="w-10 h-10" />
+      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xl shadow-emerald-500/10 p-8 sm:p-12 text-center max-w-xl mx-auto rise-in">
+        <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/25">
+          <CheckCircle2 className="w-9 h-9" />
         </div>
         <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-          Thank you!
+          Response Submitted! 🎉
         </h2>
-        <p className="text-sm sm:text-base text-slate-600 mt-2 mb-8">
-          Your response for <span className="font-semibold text-slate-800">&quot;{form.title}&quot;</span> has been recorded.
+        <p className="text-sm sm:text-base text-slate-600 mt-2 mb-8 leading-relaxed">
+          Your answers for <span className="font-semibold text-slate-800">&quot;{form.title}&quot;</span> have been recorded successfully.
         </p>
         <button
           type="button"
@@ -208,7 +208,7 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
             setIsSubmitted(false);
             setCurrentPage(1);
           }}
-          className="inline-flex items-center justify-center px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold rounded-xl transition"
+          className="inline-flex items-center justify-center px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-bold rounded-xl transition hover:scale-105 active:scale-95"
         >
           Submit another response
         </button>
@@ -217,7 +217,7 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
   }
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl p-6 sm:p-10 max-w-2xl mx-auto space-y-6">
+    <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl shadow-slate-900/5 p-6 sm:p-10 max-w-2xl mx-auto space-y-6 rise-in">
       {/* Form Header */}
       <div className="border-b border-slate-100 pb-6">
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
@@ -231,14 +231,17 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
 
         {/* Multi-Step Progress Indicator */}
         {form.isMultiStep && maxPage > 1 && (
-          <div className="mt-5 space-y-1.5">
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
-              <span>Step {currentPage} of {maxPage}</span>
-              <span>{Math.round((currentPage / maxPage) * 100)}% Completed</span>
+          <div className="mt-6 space-y-2">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-600">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: accent }} />
+                Step {currentPage} of {maxPage}
+              </span>
+              <span className="font-mono text-slate-500">{Math.round((currentPage / maxPage) * 100)}% Complete</span>
             </div>
             <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
               <div
-                className="h-full rounded-full transition-all duration-300"
+                className="h-full rounded-full transition-all duration-400 ease-out"
                 style={{ width: `${(currentPage / maxPage) * 100}%`, backgroundColor: accent }}
               />
             </div>
@@ -247,7 +250,7 @@ export function PublicFormRenderer({ form, isPreview = false }: PublicFormRender
       </div>
 
       {submitError && (
-        <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-start gap-3">
+        <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-start gap-3 rise-in">
           <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold">Submission Error</p>
