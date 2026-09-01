@@ -131,12 +131,46 @@ function extractWebsiteContent(html: string): string {
   return sanitizeForPostgres(chunks.join("\n\n").replace(/\n{3,}/g, "\n\n").trim());
 }
 
+const STATIC_ASSET_REGEX =
+  /\.(png|jpg|jpeg|gif|webp|avif|svg|ico|otf|ttf|woff|woff2|eot|css|js|mjs|map|json|xml|pdf|zip|tar|gz|exe|dmg|mp4|mp3|wav|ogg|bin)$/i;
+
+function isCrawlableHtmlPath(urlStr: string, origin: string): boolean {
+  try {
+    const parsed = new URL(urlStr, origin);
+    if (parsed.origin !== origin) return false;
+    const pathname = parsed.pathname.toLowerCase();
+
+    // Ignore asset bundles, next media, font files, and api/auth endpoints
+    if (
+      pathname.startsWith("/_next/") ||
+      pathname.startsWith("/api/") ||
+      pathname.startsWith("/cdn-cgi/") ||
+      pathname.includes("/cart") ||
+      pathname.includes("/checkout") ||
+      pathname.includes("/login") ||
+      pathname.includes("/logout") ||
+      pathname.includes("/auth") ||
+      STATIC_ASSET_REGEX.test(pathname)
+    ) {
+      return false;
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 // Discovers canonical sub-pages via sitemap.xml and internal anchor links
 async function discoverWebsitePages(initialUrl: string): Promise<string[]> {
   const rootUrl = new URL(initialUrl);
   const origin = rootUrl.origin;
   const discovered = new Set<string>();
-  discovered.add(initialUrl);
+
+  if (isCrawlableHtmlPath(initialUrl, origin)) {
+    discovered.add(initialUrl.replace(/\/$/, ""));
+  } else {
+    discovered.add(origin);
+  }
 
   // 1. Check sitemap.xml
   try {
@@ -150,21 +184,14 @@ async function discoverWebsitePages(initialUrl: string): Promise<string[]> {
       let match;
       while ((match = locRegex.exec(xml)) !== null && discovered.size < MAX_PAGES_TO_CRAWL) {
         const u = match[1].trim();
-        try {
-          const parsed = new URL(u);
-          if (
-            parsed.origin === origin &&
-            !u.endsWith(".xml") &&
-            !u.match(/\.(png|jpg|jpeg|svg|css|js|pdf|ico|woff2?)$/i)
-          ) {
-            discovered.add(parsed.href.replace(/\/$/, ""));
-          }
-        } catch (e) {}
+        if (isCrawlableHtmlPath(u, origin)) {
+          discovered.add(new URL(u, origin).href.replace(/\/$/, ""));
+        }
       }
     }
   } catch (e) {}
 
-  // 2. If sitemap had few pages, crawl internal links from the target page
+  // 2. If sitemap had few pages, crawl internal <a> links from the initial page
   if (discovered.size < MAX_PAGES_TO_CRAWL) {
     try {
       const pageRes = await fetch(initialUrl, {
@@ -173,21 +200,15 @@ async function discoverWebsitePages(initialUrl: string): Promise<string[]> {
       });
       if (pageRes.ok) {
         const html = await pageRes.text();
-        const linkRegex = /href=["']([^"'#?]+)["']/gi;
+        const linkRegex = /<a\s+[^>]*href=["']([^"'#?]+)["']/gi;
         let m;
         while ((m = linkRegex.exec(html)) !== null && discovered.size < MAX_PAGES_TO_CRAWL) {
           const link = m[1].trim();
-          if (
-            link.startsWith("/") &&
-            !link.startsWith("//") &&
-            !link.match(/\.(png|jpg|jpeg|svg|css|js|woff2?|ico|pdf|zip)$/i)
-          ) {
+          if (isCrawlableHtmlPath(link, origin)) {
             try {
               const full = new URL(link, origin).href.replace(/\/$/, "");
               discovered.add(full);
             } catch (e) {}
-          } else if (link.startsWith(origin)) {
-            discovered.add(link.replace(/\/$/, ""));
           }
         }
       }
@@ -257,6 +278,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
           signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
         });
         if (!res.ok) return null;
+
+        const contentType = res.headers.get("content-type") || "";
+        if (!contentType.includes("text/html") && !contentType.includes("text/plain")) {
+          return null;
+        }
+
         const html = await res.text();
         const content = extractWebsiteContent(html).slice(0, MAX_PAGE_CHARS);
         if (content.length < 25) return null;
