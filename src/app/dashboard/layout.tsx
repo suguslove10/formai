@@ -79,13 +79,7 @@ export default async function DashboardLayout({
           </div>
 
           {/* Right Info & Profile */}
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-900 text-white rounded-full text-xs font-semibold shadow-sm">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400 fill-current" />
-              <span className="text-[11px]">Dual AI Engine (Claude 3.7 & OpenAI)</span>
-            </div>
-
-            <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
+            <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
                 <p className="text-xs font-bold text-slate-900 leading-none">
                   {user?.firstName ? `${user.firstName} ${user?.lastName || ""}` : "Creator Account"}
