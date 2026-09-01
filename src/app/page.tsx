@@ -27,25 +27,13 @@ import {
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { UPGRADE_CONTACT, PLAN_LIMITS } from "@/lib/billing";
+import { getOrCreateDemoBotId } from "@/lib/demo-bot";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  // Check if there is a published demo chatbot to link to
-  let demoBotId: string | null = null;
-  if (process.env.DATABASE_URL) {
-    try {
-      const demoBot = await prisma.form.findFirst({
-        where: { status: "published", type: "chatbot" },
-        select: { id: true },
-      });
-      if (demoBot) {
-        demoBotId = demoBot.id;
-      }
-    } catch (e) {}
-  }
-
-  const demoLink = demoBotId ? `/c/${demoBotId}` : "/sign-up";
+  const demoBotId = await getOrCreateDemoBotId();
+  const demoLink = demoBotId ? `/c/${demoBotId}` : "/c/demo";
 
   return (
     <div className="min-h-screen bg-white text-slate-900 flex flex-col overflow-x-hidden">

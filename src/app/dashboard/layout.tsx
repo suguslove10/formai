@@ -3,6 +3,7 @@ import { UserButton } from "@clerk/nextjs";
 import { currentUser } from "@clerk/nextjs/server";
 import { LayoutDashboard, Sparkles, ShieldCheck, Bot, ExternalLink } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { getOrCreateDemoBotId } from "@/lib/demo-bot";
 
 export default async function DashboardLayout({
   children,
@@ -22,15 +23,8 @@ export default async function DashboardLayout({
     .map((e) => e.trim().toLowerCase());
   const isAdmin = allowedAdminEmails.includes(effectiveEmail.toLowerCase()) || process.env.DEMO_MODE === "true";
 
-  // Check for live demo chatbot
-  let demoBotId: string | null = null;
-  try {
-    const demoBot = await prisma.form.findFirst({
-      where: { status: "published", type: "chatbot" },
-      select: { id: true },
-    });
-    if (demoBot) demoBotId = demoBot.id;
-  } catch (e) {}
+  // Official Live Demo Chatbot
+  const demoBotId = await getOrCreateDemoBotId();
 
   return (
     <div className="min-h-screen bg-slate-50/70 flex flex-col">
