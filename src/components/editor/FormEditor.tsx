@@ -109,6 +109,7 @@ export function FormEditor({ initialForm }: FormEditorProps) {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAddFieldModal, setShowAddFieldModal] = useState(false);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(fields[0]?.id || null);
+  const [lastCrawledPages, setLastCrawledPages] = useState<string[]>([]);
 
   const isInitialMount = useRef(true);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -309,10 +310,16 @@ export function FormEditor({ initialForm }: FormEditorProps) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Import failed");
       setKnowledgeBase(data.knowledgeBase);
+      if (Array.isArray(data.crawledUrls)) {
+        setLastCrawledPages(data.crawledUrls);
+      }
       setImportUrl("");
-      toast.success("Website imported into the knowledge base", {
-        description: `${data.importedChars.toLocaleString()} characters of content added from ${data.sourceUrl}. Your bot can answer questions about it now.`,
-      });
+      toast.success(
+        `Crawled ${data.pagesCount || 1} page${(data.pagesCount || 1) > 1 ? "s" : ""}`,
+        {
+          description: `${(data.importedChars || 0).toLocaleString()} characters extracted and trained into the knowledge base from ${data.sourceUrl}.`,
+        }
+      );
     } catch (err: any) {
       toast.error("Website import failed", { description: err.message });
     } finally {
@@ -334,25 +341,26 @@ export function FormEditor({ initialForm }: FormEditorProps) {
   return (
     <div className="space-y-6">
       {/* Editor Header Bar */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <header className="bg-white border border-slate-200 rounded-2xl p-3 sm:px-4 sm:py-3.5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        {/* Left Side: Title & Status */}
+        <div className="flex items-center gap-3 min-w-0">
           <Link
             href={`/dashboard?view=${isChatbot ? "chatbots" : "forms"}`}
-            className="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition"
+            className="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition flex-shrink-0"
             title="Back to Dashboard"
           >
             <ChevronLeft className="w-5 h-5" />
           </Link>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-slate-900 text-lg line-clamp-1">{title || "Untitled Form"}</span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+              <span className="font-bold text-slate-900 text-base sm:text-lg truncate max-w-[200px] sm:max-w-xs">{title || "Untitled Form"}</span>
               {isChatbot && (
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1 whitespace-nowrap">
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1 flex-shrink-0">
                   <Bot className="w-3 h-3" /> AI Chatbot
                 </span>
               )}
               <span
-                className={`text-[11px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider flex-shrink-0 ${
                   status === "published"
                     ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                     : "bg-amber-50 text-amber-700 border border-amber-200"
@@ -361,7 +369,7 @@ export function FormEditor({ initialForm }: FormEditorProps) {
                 {status}
               </span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+            <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
               {saveStatus === "saving" && (
                 <span className="flex items-center gap-1 text-indigo-600">
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -387,65 +395,61 @@ export function FormEditor({ initialForm }: FormEditorProps) {
           </div>
         </div>
 
-        {/* Action Controls & Tab Switcher */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Tab Switcher — each product shows only its own workspace.
-              Chatbots: chat-first (preview, persona, data to collect).
-              Forms: form-first (questions, preview). */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl overflow-x-auto">
-            {(isChatbot
-              ? ([
-                  { id: "chatbot", label: "Chat Preview", Icon: Bot },
-                  { id: "knowledge", label: "Persona & Knowledge", Icon: BookOpen },
-                  { id: "editor", label: "Data to Collect", Icon: ListPlus },
-                  { id: "integrations", label: "Integrations", Icon: Zap },
-                ] as const)
-              : ([
-                  { id: "editor", label: "Questions", Icon: Edit },
-                  { id: "preview", label: "Preview", Icon: Eye },
-                  { id: "integrations", label: "Integrations", Icon: Zap },
-                ] as const)
-            ).map(({ id, label, Icon }) => (
-              <button
-                key={id}
-                onClick={() => setActiveTab(id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
-                  activeTab === id
-                    ? isChatbot
-                      ? "bg-indigo-600 text-white shadow-sm"
-                      : "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {label}
-              </button>
-            ))}
-          </div>
+        {/* Center: Tabs Switcher */}
+        <div className="flex items-center bg-slate-100/90 p-1 rounded-xl overflow-x-auto scrollbar-none flex-shrink-0 self-start lg:self-center">
+          {(isChatbot
+            ? ([
+                { id: "chatbot", label: "Chat Preview", Icon: Bot },
+                { id: "knowledge", label: "Persona & Knowledge", Icon: BookOpen },
+                { id: "editor", label: "Data to Collect", Icon: ListPlus },
+                { id: "integrations", label: "Integrations", Icon: Zap },
+              ] as const)
+            : ([
+                { id: "editor", label: "Questions", Icon: Edit },
+                { id: "preview", label: "Preview", Icon: Eye },
+                { id: "integrations", label: "Integrations", Icon: Zap },
+              ] as const)
+          ).map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+                activeTab === id
+                  ? isChatbot
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {label}
+            </button>
+          ))}
+        </div>
 
-          {/* Share & Embed Button */}
+        {/* Right Side: Actions */}
+        <div className="flex items-center gap-2 flex-shrink-0 self-end lg:self-center">
           <button
             onClick={() => setShowShareModal(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition shadow-sm whitespace-nowrap"
           >
             <Share2 className="w-3.5 h-3.5" />
-            Share & Embed
+            <span>Share & Embed</span>
           </button>
 
-          {/* Publish / Unpublish Button */}
           <button
             onClick={handleTogglePublish}
-            className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl shadow-sm transition ${
+            className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl shadow-sm transition whitespace-nowrap ${
               status === "published"
                 ? "bg-amber-600 hover:bg-amber-700 text-white shadow-amber-200"
                 : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200"
             }`}
           >
             <Globe className="w-3.5 h-3.5" />
-            {status === "published" ? "Unpublish" : "Publish"}
+            <span>{status === "published" ? "Unpublish" : "Publish"}</span>
           </button>
         </div>
-      </div>
+      </header>
 
       {/* Mode View Switcher */}
       {activeTab === "integrations" ? (
@@ -609,39 +613,64 @@ export function FormEditor({ initialForm }: FormEditorProps) {
               Paste your company background, pricing, FAQs, return policies, or instructions below — or import a page from your website.
             </p>
 
-            {/* Train from website URL */}
-            <div className="flex gap-2 mb-3">
-              <input
-                type="url"
-                value={importUrl}
-                onChange={(e) => setImportUrl(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleImportWebsite();
-                  }
-                }}
-                placeholder="https://yourcompany.com/faq — import a page from your website"
-                className="flex-1 text-xs text-slate-900 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition font-mono"
-              />
-              <button
-                type="button"
-                onClick={handleImportWebsite}
-                disabled={!importUrl.trim() || isImporting}
-                className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-sm flex items-center gap-1.5 disabled:opacity-40"
-              >
-                {isImporting ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Importing...</span>
-                  </>
-                ) : (
-                  <>
-                    <Globe className="w-3.5 h-3.5" />
-                    <span>Import Website</span>
-                  </>
-                )}
-              </button>
+            {/* Train from website URL (Multi-Page Auto Crawler) */}
+            <div className="space-y-2 mb-3">
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={importUrl}
+                  onChange={(e) => setImportUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleImportWebsite();
+                    }
+                  }}
+                  placeholder="https://yourcompany.com — crawls full website (sitemap & internal pages)"
+                  className="flex-1 text-xs text-slate-900 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={handleImportWebsite}
+                  disabled={!importUrl.trim() || isImporting}
+                  className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-sm flex items-center gap-1.5 disabled:opacity-40 whitespace-nowrap"
+                >
+                  {isImporting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Crawling Pages...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Globe className="w-3.5 h-3.5" />
+                      <span>Crawl Website</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {lastCrawledPages.length > 0 && (
+                <div className="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-xl">
+                  <div className="flex items-center justify-between text-xs font-bold text-emerald-800 mb-1.5">
+                    <span className="flex items-center gap-1.5">
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      Successfully Crawled {lastCrawledPages.length} Pages
+                    </span>
+                    <span className="text-[11px] font-medium text-emerald-600">Auto-Indexed into RAG</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                    {lastCrawledPages.map((url, idx) => (
+                      <span
+                        key={idx}
+                        className="text-[10px] font-mono bg-white text-slate-700 px-2 py-0.5 rounded-md border border-emerald-200 truncate max-w-xs shadow-2xs"
+                        title={url}
+                      >
+                        {url.replace(/^https?:\/\/[^/]+/, "") || "/"}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <textarea

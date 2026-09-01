@@ -10,9 +10,16 @@ interface RouteParams {
   };
 }
 
-const FETCH_TIMEOUT_MS = 15_000;
-const MAX_EXTRACT_CHARS = 8_000; // keep the KB prompt-sized
-const MAX_KB_CHARS = 24_000;
+const FETCH_TIMEOUT_MS = 12_000;
+const MAX_PAGES_TO_CRAWL = 12; // Crawl up to 12 canonical pages per domain
+const MAX_PAGE_CHARS = 3_000;  // Chars per page
+const MAX_TOTAL_KB_CHARS = 24_000;
+
+const BROWSER_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 (FormAI/1.0)",
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9",
+};
 
 // Multi-strategy HTML text extractor: parses metadata, schema.org JSON-LD,
 // Next.js/React hydration data, and rendered DOM elements.
@@ -111,8 +118,74 @@ function extractWebsiteContent(html: string): string {
   return chunks.join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
-// POST /api/forms/[id]/train — fetch a public web page and append its text
-// content to the form's knowledge base ("train the bot on your website").
+// Discovers canonical sub-pages via sitemap.xml and internal anchor links
+async function discoverWebsitePages(initialUrl: string): Promise<string[]> {
+  const rootUrl = new URL(initialUrl);
+  const origin = rootUrl.origin;
+  const discovered = new Set<string>();
+  discovered.add(initialUrl);
+
+  // 1. Check sitemap.xml
+  try {
+    const sitemapRes = await fetch(`${origin}/sitemap.xml`, {
+      headers: BROWSER_HEADERS,
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (sitemapRes.ok) {
+      const xml = await sitemapRes.text();
+      const locRegex = /<loc>\s*([^<\s]+)\s*<\/loc>/gi;
+      let match;
+      while ((match = locRegex.exec(xml)) !== null && discovered.size < MAX_PAGES_TO_CRAWL) {
+        const u = match[1].trim();
+        try {
+          const parsed = new URL(u);
+          if (
+            parsed.origin === origin &&
+            !u.endsWith(".xml") &&
+            !u.match(/\.(png|jpg|jpeg|svg|css|js|pdf|ico|woff2?)$/i)
+          ) {
+            discovered.add(parsed.href.replace(/\/$/, ""));
+          }
+        } catch (e) {}
+      }
+    }
+  } catch (e) {}
+
+  // 2. If sitemap had few pages, crawl internal links from the target page
+  if (discovered.size < MAX_PAGES_TO_CRAWL) {
+    try {
+      const pageRes = await fetch(initialUrl, {
+        headers: BROWSER_HEADERS,
+        signal: AbortSignal.timeout(6_000),
+      });
+      if (pageRes.ok) {
+        const html = await pageRes.text();
+        const linkRegex = /href=["']([^"'#?]+)["']/gi;
+        let m;
+        while ((m = linkRegex.exec(html)) !== null && discovered.size < MAX_PAGES_TO_CRAWL) {
+          const link = m[1].trim();
+          if (
+            link.startsWith("/") &&
+            !link.startsWith("//") &&
+            !link.match(/\.(png|jpg|jpeg|svg|css|js|woff2?|ico|pdf|zip)$/i)
+          ) {
+            try {
+              const full = new URL(link, origin).href.replace(/\/$/, "");
+              discovered.add(full);
+            } catch (e) {}
+          } else if (link.startsWith(origin)) {
+            discovered.add(link.replace(/\/$/, ""));
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  return Array.from(discovered).slice(0, MAX_PAGES_TO_CRAWL);
+}
+
+// POST /api/forms/[id]/train — fetch an entire website (multi-page sitemap + links)
+// and compile all pages into the form's knowledge base.
 export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
     let userId: string | null = null;
@@ -159,58 +232,62 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       );
     }
 
-    let html = "";
-    try {
-      const res = await fetch(normalizedUrl, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 (FormAI/1.0)",
-          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-          "Accept-Language": "en-US,en;q=0.9",
-        },
-        redirect: "follow",
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      });
-      if (!res.ok) {
-        return NextResponse.json(
-          { error: `The website responded with status ${res.status}. Check the URL and try again.` },
-          { status: 422 }
-        );
-      }
-      const contentType = res.headers.get("content-type") || "";
-      if (!contentType.includes("text/html") && !contentType.includes("text/plain")) {
-        return NextResponse.json(
-          { error: "That URL is not a web page. Point to an HTML page like your FAQ or pricing page." },
-          { status: 422 }
-        );
-      }
-      html = await res.text();
-    } catch (fetchErr: any) {
+    // 1. Discover all canonical pages across the website
+    const pagesToCrawl = await discoverWebsitePages(normalizedUrl);
+
+    // 2. Concurrently fetch and extract clean content from all discovered pages
+    const results = await Promise.allSettled(
+      pagesToCrawl.map(async (pageUrl) => {
+        const res = await fetch(pageUrl, {
+          headers: BROWSER_HEADERS,
+          redirect: "follow",
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        });
+        if (!res.ok) return null;
+        const html = await res.text();
+        const content = extractWebsiteContent(html).slice(0, MAX_PAGE_CHARS);
+        if (content.length < 25) return null;
+        return {
+          url: pageUrl,
+          content,
+        };
+      })
+    );
+
+    const crawledPages = results
+      .filter((r): r is PromiseFulfilledResult<{ url: string; content: string } | null> => r.status === "fulfilled")
+      .map((r) => r.value)
+      .filter((v): v is { url: string; content: string } => v !== null);
+
+    if (crawledPages.length === 0) {
       return NextResponse.json(
-        { error: "Could not reach that website. Check the URL and try again." },
+        { error: "Could not extract readable text from that website. Please check the address and try again." },
         { status: 422 }
       );
     }
 
-    const text = extractWebsiteContent(html).slice(0, MAX_EXTRACT_CHARS);
-    if (text.length < 25) {
-      return NextResponse.json(
-        { error: "No readable text found on that page. Try a content page like /faq or /pricing." },
-        { status: 422 }
-      );
+    // 3. Compile all pages into a structured knowledge base block
+    let combinedImportBlock = `\n\n### 🌐 Website Knowledge Base: ${normalizedUrl} (${new Date().toISOString().slice(0, 10)})\nCrawled ${crawledPages.length} canonical page${crawledPages.length > 1 ? "s" : ""}:\n`;
+    
+    for (const page of crawledPages) {
+      combinedImportBlock += `\n---\n#### 📄 Page: ${page.url}\n${page.content}\n`;
     }
 
-    const importBlock = `\n\n### Imported from ${normalizedUrl} (${new Date().toISOString().slice(0, 10)})\n${text}`;
-    const updatedKb = ((form.knowledgeBase || "") + importBlock).slice(-MAX_KB_CHARS);
+    const updatedKb = ((form.knowledgeBase || "") + combinedImportBlock).slice(-MAX_TOTAL_KB_CHARS);
 
     await prisma.form.update({
       where: { id },
       data: { knowledgeBase: updatedKb },
     });
 
+    const totalImportedChars = crawledPages.reduce((sum, p) => sum + p.content.length, 0);
+
     return NextResponse.json({
       success: true,
       knowledgeBase: updatedKb,
-      importedChars: text.length,
+      pagesCount: crawledPages.length,
+      crawledUrls: crawledPages.map((p) => p.url),
+      importedChars: totalImportedChars,
       sourceUrl: normalizedUrl,
     });
   } catch (error: any) {
