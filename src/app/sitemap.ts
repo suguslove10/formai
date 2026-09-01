@@ -26,25 +26,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // Dynamically include published forms and chatbots
-  try {
-    const publishedForms = await prisma.form.findMany({
-      where: { status: "published" },
-      select: { id: true, type: true, updatedAt: true },
-      take: 100,
-    });
-
-    publishedForms.forEach((form) => {
-      const pathPrefix = form.type === "chatbot" ? "/c/" : "/f/";
-      routes.push({
-        url: `${baseUrl}${pathPrefix}${form.id}`,
-        lastModified: form.updatedAt,
-        changeFrequency: "weekly",
-        priority: 0.7,
+  // Dynamically include published forms and chatbots if DB is available
+  if (process.env.DATABASE_URL) {
+    try {
+      const publishedForms = await prisma.form.findMany({
+        where: { status: "published" },
+        select: { id: true, type: true, updatedAt: true },
+        take: 100,
       });
-    });
-  } catch (e) {
-    console.warn("Sitemap dynamic generation warning:", e);
+
+      publishedForms.forEach((form) => {
+        const pathPrefix = form.type === "chatbot" ? "/c/" : "/f/";
+        routes.push({
+          url: `${baseUrl}${pathPrefix}${form.id}`,
+          lastModified: form.updatedAt,
+          changeFrequency: "weekly",
+          priority: 0.7,
+        });
+      });
+    } catch (e) {
+      // Ignore during build phase if DB is unreachable
+    }
   }
 
   return routes;

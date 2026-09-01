@@ -33,15 +33,17 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   // Check if there is a published demo chatbot to link to
   let demoBotId: string | null = null;
-  try {
-    const demoBot = await prisma.form.findFirst({
-      where: { status: "published", type: "chatbot" },
-      select: { id: true },
-    });
-    if (demoBot) {
-      demoBotId = demoBot.id;
-    }
-  } catch (e) {}
+  if (process.env.DATABASE_URL) {
+    try {
+      const demoBot = await prisma.form.findFirst({
+        where: { status: "published", type: "chatbot" },
+        select: { id: true },
+      });
+      if (demoBot) {
+        demoBotId = demoBot.id;
+      }
+    } catch (e) {}
+  }
 
   const demoLink = demoBotId ? `/c/${demoBotId}` : "/sign-up";
 
