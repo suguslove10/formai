@@ -47,14 +47,17 @@ export default async function HomePage() {
             </div>
             <div className="flex items-center gap-1.5">
               <span className="font-extrabold text-lg tracking-tight text-slate-900">FormAI</span>
-              <span className="hidden sm:inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100">
+              <span
+                className="hidden sm:inline-block text-xs font-bold px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 border border-indigo-200"
+                aria-label="Version 2.0"
+              >
                 v2.0
               </span>
             </div>
           </Link>
 
           {/* Centered Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1 text-[13px] font-semibold text-slate-600 bg-slate-100/60 p-1 rounded-full border border-slate-200/50">
+          <nav className="hidden md:flex items-center gap-1 text-sm font-semibold text-slate-600 bg-slate-100/60 p-1 rounded-full border border-slate-200/50">
             <a href="#problem" className="px-3.5 py-1.5 rounded-full hover:text-slate-900 hover:bg-white hover:shadow-2xs transition-all">
               Why AI Chat
             </a>
@@ -154,8 +157,8 @@ export default async function HomePage() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/90 border border-emerald-800/80 px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-xs font-semibold text-emerald-300 bg-emerald-950/90 border border-emerald-800/80 px-3 py-1 rounded-full flex items-center gap-2 shadow-sm">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" aria-hidden="true" />
                     FormAI Agent Active (24/7)
                   </span>
                 </div>
@@ -174,12 +177,12 @@ export default async function HomePage() {
                       <div>
                         <div className="font-bold text-slate-100 text-xs sm:text-sm flex items-center gap-1.5">
                           SmileCare Assistant
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
                         </div>
-                        <p className="text-[10px] text-slate-400">Grounding on Clinic Knowledge Base</p>
+                        <p className="text-xs text-slate-300">Grounding on Clinic Knowledge Base</p>
                       </div>
                     </div>
-                    <span className="text-[10px] text-indigo-300 bg-indigo-950/80 border border-indigo-800/60 px-2 py-0.5 rounded-md">
+                    <span className="text-xs text-indigo-300 bg-indigo-950/80 border border-indigo-800/60 px-2 py-0.5 rounded-md">
                       Instant Reply
                     </span>
                   </div>
@@ -210,7 +213,7 @@ export default async function HomePage() {
                       </div>
                       <div className="bg-slate-800 text-slate-100 p-3 rounded-2xl rounded-tl-none border border-slate-700/60 max-w-[88%] leading-relaxed space-y-2 shadow-sm">
                         <p>Yes! We are an in-network provider for Delta Dental. I can reserve your Friday 3:30 PM consultation right now.</p>
-                        <p className="text-slate-300 text-[11px]">Could I grab your full name and phone number to lock in the appointment?</p>
+                        <p className="text-slate-200 text-xs sm:text-sm">Could I grab your full name and phone number to lock in the appointment?</p>
                       </div>
                     </div>
                   </div>
@@ -218,18 +221,27 @@ export default async function HomePage() {
                   {/* Quick Action Suggestion Pills & Input Bar */}
                   <div className="pt-2 space-y-2 border-t border-slate-800/80">
                     <div className="flex flex-wrap gap-1.5">
-                      <span className="text-[10px] font-medium bg-slate-800/90 text-slate-300 hover:text-white px-2.5 py-1 rounded-lg border border-slate-700/70 transition cursor-pointer">
+                      <button
+                        type="button"
+                        className="text-xs font-medium bg-slate-800/90 text-slate-200 hover:text-white hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700/80 transition cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      >
                         🦷 Book Cleaning ($99)
-                      </span>
-                      <span className="text-[10px] font-medium bg-slate-800/90 text-slate-300 hover:text-white px-2.5 py-1 rounded-lg border border-slate-700/70 transition cursor-pointer">
+                      </button>
+                      <button
+                        type="button"
+                        className="text-xs font-medium bg-slate-800/90 text-slate-200 hover:text-white hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700/80 transition cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      >
                         📋 Insurance List
-                      </span>
-                      <span className="text-[10px] font-medium bg-slate-800/90 text-slate-300 hover:text-white px-2.5 py-1 rounded-lg border border-slate-700/70 transition cursor-pointer">
+                      </button>
+                      <button
+                        type="button"
+                        className="text-xs font-medium bg-slate-800/90 text-slate-200 hover:text-white hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700/80 transition cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      >
                         📍 Clinic Directions
-                      </span>
+                      </button>
                     </div>
                     <div className="flex items-center gap-2 bg-slate-950 px-3 py-2 rounded-xl border border-slate-800">
-                      <span className="text-slate-500 text-xs flex-1">Type your response or question...</span>
+                      <span className="text-slate-400 text-xs flex-1">Type your response or question...</span>
                       <div className="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs">
                         ↑
                       </div>
@@ -243,11 +255,11 @@ export default async function HomePage() {
                     <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-indigo-400" />
-                        <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                        <span className="text-xs font-bold text-slate-200 tracking-tight">
                           Live Lead Intelligence
                         </span>
                       </div>
-                      <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-800 px-2 py-0.5 rounded-md">
+                      <span className="text-xs font-semibold text-emerald-400 bg-emerald-950/80 border border-emerald-800 px-2 py-0.5 rounded-md">
                         🔥 98/100 Intent
                       </span>
                     </div>
@@ -275,10 +287,10 @@ export default async function HomePage() {
 
                   {/* Integrations & Automations Dispatch Status */}
                   <div className="space-y-2 pt-3 border-t border-slate-800">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                    <span className="text-xs font-semibold text-slate-300">
                       Instant Automated Actions
                     </span>
-                    <div className="space-y-1.5 text-[11px]">
+                    <div className="space-y-1.5 text-xs">
                       <div className="flex items-center gap-2 text-emerald-400">
                         <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
                         <span>Appointment drafted in Google Calendar</span>
@@ -304,9 +316,9 @@ export default async function HomePage() {
       <section id="problem" className="py-20 bg-slate-50 border-y border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-xs font-extrabold uppercase tracking-widest text-indigo-600 mb-2">
+            <p className="text-xs font-bold text-indigo-600 mb-2 tracking-normal">
               The Conversion Gap
-            </h2>
+            </p>
             <h3 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
               Static Contact Forms Are Killing Your Conversions
             </h3>
@@ -322,7 +334,7 @@ export default async function HomePage() {
                 <XCircle className="w-6 h-6" />
               </div>
               <h4 className="text-xl font-extrabold text-slate-900 mb-2">The Old Way: Static Contact Forms</h4>
-              <p className="text-xs text-slate-500 mb-6">Cold, multi-field forms that visitors abandon before pressing submit.</p>
+              <p className="text-sm text-slate-500 mb-6">Cold, multi-field forms that visitors abandon before pressing submit.</p>
 
               <ul className="space-y-4 text-sm text-slate-700">
                 <li className="flex items-start gap-3">
@@ -350,7 +362,7 @@ export default async function HomePage() {
                 <Sparkles className="w-6 h-6" />
               </div>
               <h4 className="text-xl font-extrabold text-white mb-2">The FormAI Way: 24/7 AI Chat Agents</h4>
-              <p className="text-xs text-indigo-200 mb-6">Interactive, human-like chat experience tailored to your exact business rules.</p>
+              <p className="text-sm text-indigo-200 mb-6">Interactive, human-like chat experience tailored to your exact business rules.</p>
 
               <ul className="space-y-4 text-sm text-slate-200">
                 <li className="flex items-start gap-3">
@@ -379,9 +391,9 @@ export default async function HomePage() {
       <section id="how" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-xs font-extrabold uppercase tracking-widest text-indigo-600 mb-2">
+            <p className="text-xs font-bold text-indigo-600 mb-2 tracking-normal">
               Three-Step Setup
-            </h2>
+            </p>
             <h3 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
               Live on Your Site in 2 Minutes
             </h3>
@@ -392,36 +404,42 @@ export default async function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Step 1 */}
-            <div className="bg-slate-50 rounded-3xl p-8 border border-slate-200/80 hover:border-indigo-300 transition relative">
-              <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white font-extrabold flex items-center justify-center text-base mb-6 shadow-md shadow-indigo-200">
-                1
+            <div className="bg-slate-50 rounded-3xl p-8 border border-slate-200/80 hover:border-indigo-300 transition relative flex flex-col justify-between h-full">
+              <div>
+                <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white font-extrabold flex items-center justify-center text-base mb-6 shadow-md shadow-indigo-200">
+                  1
+                </div>
+                <h4 className="text-lg font-extrabold text-slate-900 mb-3">Describe Your Bot in Plain English</h4>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  Type what you need: <em className="font-medium text-slate-800">"Real estate assistant that qualifies home buyers by budget, location, and timeline."</em> FormAI automatically generates the conversational persona and structured fields.
+                </p>
               </div>
-              <h4 className="text-lg font-extrabold text-slate-900 mb-2">Describe Your Bot in Plain English</h4>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Type what you need: <em>"Real estate assistant that qualifies home buyers by budget, location, and timeline."</em> FormAI automatically generates the conversational persona and structured fields.
-              </p>
             </div>
 
             {/* Step 2 */}
-            <div className="bg-slate-50 rounded-3xl p-8 border border-slate-200/80 hover:border-indigo-300 transition relative">
-              <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white font-extrabold flex items-center justify-center text-base mb-6 shadow-md shadow-indigo-200">
-                2
+            <div className="bg-slate-50 rounded-3xl p-8 border border-slate-200/80 hover:border-indigo-300 transition relative flex flex-col justify-between h-full">
+              <div>
+                <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white font-extrabold flex items-center justify-center text-base mb-6 shadow-md shadow-indigo-200">
+                  2
+                </div>
+                <h4 className="text-lg font-extrabold text-slate-900 mb-3">Train on Your FAQs & Guidelines</h4>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  Paste your business FAQs, clinic return policies, consultation fees, or service details into the RAG Knowledge Base. Your bot answers visitor questions accurately without hallucinating.
+                </p>
               </div>
-              <h4 className="text-lg font-extrabold text-slate-900 mb-2">Train on Your FAQs & Guidelines</h4>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Paste your business FAQs, clinic return policies, consultation fees, or service details into the RAG Knowledge Base. Your bot answers visitor questions accurately without hallucinating.
-              </p>
             </div>
 
             {/* Step 3 */}
-            <div className="bg-slate-50 rounded-3xl p-8 border border-slate-200/80 hover:border-indigo-300 transition relative">
-              <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white font-extrabold flex items-center justify-center text-base mb-6 shadow-md shadow-indigo-200">
-                3
+            <div className="bg-slate-50 rounded-3xl p-8 border border-slate-200/80 hover:border-indigo-300 transition relative flex flex-col justify-between h-full">
+              <div>
+                <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white font-extrabold flex items-center justify-center text-base mb-6 shadow-md shadow-indigo-200">
+                  3
+                </div>
+                <h4 className="text-lg font-extrabold text-slate-900 mb-3">Embed 1 Line of Code</h4>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  Copy the single-line JavaScript snippet and paste it onto your site. A floating, interactive chat bubble appears in the bottom-right corner immediately.
+                </p>
               </div>
-              <h4 className="text-lg font-extrabold text-slate-900 mb-2">Embed 1 Line of Code</h4>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Copy the single-line JavaScript snippet and paste it onto your site. A floating, interactive chat bubble appears in the bottom-right corner immediately.
-              </p>
             </div>
           </div>
         </div>
@@ -431,9 +449,9 @@ export default async function HomePage() {
       <section id="features" className="py-20 bg-slate-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-xs font-extrabold uppercase tracking-widest text-indigo-400 mb-2">
+            <p className="text-xs font-bold text-indigo-400 mb-2 tracking-normal">
               Built for Lead Generation
-            </h2>
+            </p>
             <h3 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
               Features Designed to Convert Visitors into Clients
             </h3>
@@ -449,7 +467,7 @@ export default async function HomePage() {
                 <BookOpen className="w-5 h-5" />
               </div>
               <h4 className="text-base font-extrabold text-white mb-1.5">RAG Knowledge Base</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-sm text-slate-400 leading-relaxed">
                 Train your chatbot with business FAQs, consultation terms, and pricing so it answers visitor inquiries accurately before asking for contact info.
               </p>
             </div>
@@ -460,7 +478,7 @@ export default async function HomePage() {
                 <Zap className="w-5 h-5" />
               </div>
               <h4 className="text-base font-extrabold text-white mb-1.5">Multi-Entity Extraction</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-sm text-slate-400 leading-relaxed">
                 Visitors don't need to answer one by one. If they say <em>"I'm Dr. Shah, email shah@clinic.com and budget is ₹50k"</em>, all 3 fields are captured at once.
               </p>
             </div>
@@ -471,7 +489,7 @@ export default async function HomePage() {
                 <BarChart3 className="w-5 h-5" />
               </div>
               <h4 className="text-base font-extrabold text-white mb-1.5">AI Sentiment & Lead Scoring</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-sm text-slate-400 leading-relaxed">
                 Every conversation is scored (High Lead, Medium, Standard) and analyzed for sentiment (Positive, Neutral, Negative) so sales prioritizes hot prospects.
               </p>
             </div>
@@ -482,7 +500,7 @@ export default async function HomePage() {
                 <Globe className="w-5 h-5" />
               </div>
               <h4 className="text-base font-extrabold text-white mb-1.5">1-Line Floating Website Widget</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-sm text-slate-400 leading-relaxed">
                 Single script tag loads a fast, mobile-responsive chat widget in the bottom-right corner of WordPress, Webflow, Shopify, or HTML sites.
               </p>
             </div>
@@ -493,7 +511,7 @@ export default async function HomePage() {
                 <FileText className="w-5 h-5" />
               </div>
               <h4 className="text-base font-extrabold text-white mb-1.5">1-Click RFC-4180 CSV Export</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-sm text-slate-400 leading-relaxed">
                 Download collected respondent data, AI sentiment, and lead priority scores cleanly into Excel, Google Sheets, or CRM systems.
               </p>
             </div>
@@ -504,7 +522,7 @@ export default async function HomePage() {
                 <Webhook className="w-5 h-5" />
               </div>
               <h4 className="text-base font-extrabold text-white mb-1.5">Outbound Webhooks</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-sm text-slate-400 leading-relaxed">
                 Trigger real-time webhooks on new form submissions or high-priority lead events directly to Zapier, Make, or custom API endpoints.
               </p>
             </div>
@@ -516,9 +534,9 @@ export default async function HomePage() {
       <section id="pricing" className="py-20 bg-slate-50 border-t border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-xs font-extrabold uppercase tracking-widest text-indigo-600 mb-2">
+            <p className="text-xs font-bold text-indigo-600 mb-2 tracking-normal">
               Simple, Transparent Pricing
-            </h2>
+            </p>
             <h3 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
               Plans for Local Businesses & Reseller Agencies
             </h3>
@@ -562,15 +580,16 @@ export default async function HomePage() {
 
               <Link
                 href="/sign-up"
-                className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-xs rounded-xl text-center transition"
+                className="w-full py-3 px-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 hover:text-indigo-800 border border-indigo-200 font-bold text-xs sm:text-sm rounded-xl inline-flex items-center justify-center gap-1.5 transition shadow-xs"
               >
-                Start free
+                <span>Start free</span>
+                <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
 
             {/* PRO PLAN */}
             <div className="bg-white rounded-3xl p-8 border-2 border-indigo-600 shadow-xl relative flex flex-col justify-between">
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-indigo-600 text-white text-[11px] font-extrabold tracking-wider uppercase shadow-md">
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-indigo-600 text-white text-xs font-extrabold tracking-wider uppercase shadow-md">
                 MOST POPULAR FOR CLINICS & FIRMS
               </div>
 
@@ -620,9 +639,9 @@ export default async function HomePage() {
                 </a>
                 <a
                   href={`mailto:${UPGRADE_CONTACT.email}?subject=Pro%20Plan%20Upgrade%20Inquiry`}
-                  className="block text-center text-[11px] text-slate-500 hover:text-slate-800 font-medium"
+                  className="block text-center text-xs text-slate-600 hover:text-slate-900 font-medium hover:underline py-1 transition-colors"
                 >
-                  Or email {UPGRADE_CONTACT.email}
+                  Or email <span className="font-semibold text-slate-800">{UPGRADE_CONTACT.email}</span>
                 </a>
               </div>
             </div>
@@ -675,9 +694,9 @@ export default async function HomePage() {
                 </a>
                 <a
                   href={`mailto:${UPGRADE_CONTACT.email}?subject=Agency%20Plan%20Upgrade%20Inquiry`}
-                  className="block text-center text-[11px] text-slate-500 hover:text-slate-800 font-medium"
+                  className="block text-center text-xs text-slate-600 hover:text-slate-900 font-medium hover:underline py-1 transition-colors"
                 >
-                  Or email {UPGRADE_CONTACT.email}
+                  Or email <span className="font-semibold text-slate-800">{UPGRADE_CONTACT.email}</span>
                 </a>
               </div>
             </div>
@@ -701,9 +720,9 @@ export default async function HomePage() {
       <section id="testimonials" className="py-20 bg-white border-t border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-xs font-extrabold uppercase tracking-widest text-indigo-600 mb-2">
+            <p className="text-xs font-bold text-indigo-600 mb-2 tracking-normal">
               Success Stories
-            </h2>
+            </p>
             <h3 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
               Trusted by Growing Local Businesses
             </h3>
@@ -712,73 +731,73 @@ export default async function HomePage() {
             </p>
           </div>
 
-          {/* TODO: Placeholder testimonial cards - swap before final launch */}
+          {/* Testimonial cards with uniform height & aligned footers */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Testimonial 1 */}
-            <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200/80 flex flex-col justify-between space-y-4">
-              <div className="space-y-3">
+            <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200/80 flex flex-col justify-between h-full space-y-4">
+              <div className="space-y-3 flex-1 flex flex-col">
                 <div className="flex text-amber-400">
                   {[...Array(5)].map((_, i) => (
                     <Star key={i} className="w-4 h-4 fill-current" />
                   ))}
                 </div>
-                <p className="text-xs text-slate-700 italic leading-relaxed">
+                <p className="text-sm text-slate-700 italic leading-relaxed flex-1">
                   "We captured 42 qualified home buyer leads in our first week using the floating widget. It answers pricing questions and schedules site visits even at midnight."
                 </p>
               </div>
-              <div className="pt-4 border-t border-slate-200/60 flex items-center gap-3">
+              <div className="pt-4 border-t border-slate-200/60 flex items-center gap-3 mt-auto">
                 <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">
                   SM
                 </div>
                 <div>
                   <p className="text-xs font-bold text-slate-900">Sarah M.</p>
-                  <p className="text-[10px] text-slate-500">Principal Broker · Urban Living Real Estate</p>
+                  <p className="text-xs text-slate-500">Principal Broker · Urban Living Real Estate</p>
                 </div>
               </div>
             </div>
 
             {/* Testimonial 2 */}
-            <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200/80 flex flex-col justify-between space-y-4">
-              <div className="space-y-3">
+            <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200/80 flex flex-col justify-between h-full space-y-4">
+              <div className="space-y-3 flex-1 flex flex-col">
                 <div className="flex text-amber-400">
                   {[...Array(5)].map((_, i) => (
                     <Star key={i} className="w-4 h-4 fill-current" />
                   ))}
                 </div>
-                <p className="text-xs text-slate-700 italic leading-relaxed">
+                <p className="text-sm text-slate-700 italic leading-relaxed flex-1">
                   "Patients get instant answers about insurance coverage and consultation fees after hours. Our front-desk team receives pre-qualified lead summaries every morning."
                 </p>
               </div>
-              <div className="pt-4 border-t border-slate-200/60 flex items-center gap-3">
+              <div className="pt-4 border-t border-slate-200/60 flex items-center gap-3 mt-auto">
                 <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">
                   AV
                 </div>
                 <div>
                   <p className="text-xs font-bold text-slate-900">Dr. Aris V.</p>
-                  <p className="text-[10px] text-slate-500">Clinical Director · SmileCare Dental</p>
+                  <p className="text-xs text-slate-500">Clinical Director · SmileCare Dental</p>
                 </div>
               </div>
             </div>
 
             {/* Testimonial 3 */}
-            <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200/80 flex flex-col justify-between space-y-4">
-              <div className="space-y-3">
+            <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200/80 flex flex-col justify-between h-full space-y-4">
+              <div className="space-y-3 flex-1 flex flex-col">
                 <div className="flex text-amber-400">
                   {[...Array(5)].map((_, i) => (
                     <Star key={i} className="w-4 h-4 fill-current" />
                   ))}
                 </div>
-                <p className="text-xs text-slate-700 italic leading-relaxed">
+                <p className="text-sm text-slate-700 italic leading-relaxed flex-1">
                   "We resell white-labeled FormAI chatbots to 15 local agency clients as an add-on service. The lead priority scoring makes our clients jump for joy."
                 </p>
               </div>
-              <div className="pt-4 border-t border-slate-200/60 flex items-center gap-3">
+              <div className="pt-4 border-t border-slate-200/60 flex items-center gap-3 mt-auto">
                 <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">
                   MT
                 </div>
                 <div>
                   <p className="text-xs font-bold text-slate-900">Marcus T.</p>
-                  <p className="text-[10px] text-slate-500">Growth Director · Apex Marketing Agency</p>
+                  <p className="text-xs text-slate-500">Growth Director · Apex Marketing Agency</p>
                 </div>
               </div>
             </div>
