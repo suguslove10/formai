@@ -39,7 +39,10 @@ export default async function DashboardLayout({
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="font-extrabold text-xl text-slate-900 tracking-tight">FormAI</span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded-md uppercase tracking-wide border border-indigo-100">
+                <span
+                  className="text-xs font-bold px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded-md border border-indigo-200"
+                  aria-label="Version 2.0"
+                >
                   v2.0
                 </span>
               </div>
@@ -58,11 +61,12 @@ export default async function DashboardLayout({
                 <Link
                   href={`/c/${demoBotId}`}
                   target="_blank"
-                  className="px-3.5 py-2 rounded-xl text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 transition flex items-center gap-1.5"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-2 rounded-xl text-slate-700 hover:text-indigo-600 hover:bg-indigo-50/70 transition flex items-center gap-2"
                 >
-                  <Bot className="w-4 h-4 text-emerald-600" />
+                  <Bot className="w-4 h-4 text-indigo-600" />
                   <span>Live Demo Chatbot</span>
-                  <ExternalLink className="w-3 h-3 text-slate-400" />
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
                 </Link>
               )}
 
@@ -84,7 +88,7 @@ export default async function DashboardLayout({
               <p className="text-xs font-bold text-slate-900 leading-none">
                 {user?.firstName ? `${user.firstName} ${user?.lastName || ""}` : "Creator Account"}
               </p>
-              <p className="text-[11px] text-slate-500 mt-1 leading-none">
+              <p className="text-xs text-slate-500 mt-0.5 leading-none">
                 {effectiveEmail}
               </p>
             </div>
